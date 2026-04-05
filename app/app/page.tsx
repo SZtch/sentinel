@@ -3,42 +3,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 
-// ── Custom SVG Icons ─────────────────────────────────────────
-function IconBack() {
-  return (
-    <svg width="18" height="8" viewBox="0 0 18 8" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
-      <line x1="17" y1="4" x2="1" y2="4" />
-      <line x1="1" y1="4" x2="4" y2="1.5" />
-      <line x1="1" y1="4" x2="4" y2="6.5" />
-    </svg>
-  )
-}
+import { UserBar } from '../../components/UserBar'
+import { QuestionCard } from '../../components/QuestionCard'
+import { ResponsePanel } from '../../components/ResponsePanel'
+import { StatusBanner } from '../../components/StatusBanner'
+import { JournalPanel } from '../../components/JournalPanel'
+import type { Lang, Answer, JournalData } from '../../components/types'
 
-function IconRetry() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="0.75" strokeLinecap="round">
-      <path d="M7 1.5 A5.5 5.5 0 1 0 12.5 7" />
-      <line x1="12.5" y1="7" x2="12.5" y2="3" />
-      <line x1="12.5" y1="3" x2="9" y2="3" />
-    </svg>
-  )
-}
-
-function IconSend({ active }: { active: boolean }) {
-  return (
-    <svg width="18" height="14" viewBox="0 0 18 14" fill="none"
-      stroke={active ? 'rgba(210,175,130,0.7)' : 'rgba(255,255,255,0.1)'}
-      strokeWidth="0.75" strokeLinecap="round">
-      <line x1="1" y1="7" x2="17" y2="7" />
-      <line x1="17" y1="7" x2="12" y2="2.5" />
-      <line x1="17" y1="7" x2="12" y2="11.5" />
-    </svg>
-  )
-}
-
-type Lang = 'id' | 'en'
-type Answer = 'yes' | 'no'
-
+// ── Constants ────────────────────────────────────────────────
 const STATIC = {
   id: {
     yes: 'ya', no: 'tidak',
@@ -84,11 +56,7 @@ const FALLBACK_RESPONSES = {
   },
 }
 
-type JournalData = {
-  streak: number
-  journal: { week: string; content: string; sessionCount: number; generatedAt?: number } | null
-}
-
+// ── Helpers ──────────────────────────────────────────────────
 function detectLang(): Lang {
   if (typeof navigator === 'undefined') return 'id'
   const l = navigator.language || ''
@@ -123,6 +91,7 @@ function LoadingDots() {
   )
 }
 
+// ── Root ─────────────────────────────────────────────────────
 export default function Home() {
   const { data: session, status } = useSession()
   const [isGuest, setIsGuest] = useState(false)
@@ -140,13 +109,12 @@ export default function Home() {
   }, [status])
 
   if (status === 'loading') return <LoadingDots />
-
-  // unauthenticated + no guest cookie = redirect triggered, hold render
   if (status === 'unauthenticated' && !isGuest) return null
 
   return <AppContent session={session} isGuest={isGuest} />
 }
 
+// ── Controller ───────────────────────────────────────────────
 function AppContent({
   session,
   isGuest,
@@ -154,11 +122,12 @@ function AppContent({
   session: ReturnType<typeof useSession>['data']
   isGuest: boolean
 }) {
+  // ── State ──────────────────────────────────────────────────
   const [lang, setLang] = useState<Lang>('id')
   const [question, setQuestion] = useState('')
   const [questionLoading, setQuestionLoading] = useState(true)
   const [buttonsDisabled, setButtonsDisabled] = useState(true)
-  const [hoverSide, setHoverSide] = useState<'yes' | 'no' | null>(null)
+  const [hoverSide, setHoverSide] = useState<Answer | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [resultActive, setResultActive] = useState(false)
   const [answerType, setAnswerType] = useState<Answer>('yes')
@@ -176,8 +145,9 @@ function AppContent({
   const [chatLoading, setChatLoading] = useState(false)
   const [showChatPrompt, setShowChatPrompt] = useState(false)
   const [showHint, setShowHint] = useState(false)
-  const chatEndRef = useRef<HTMLDivElement>(null)
 
+  // ── Refs ───────────────────────────────────────────────────
+  const chatEndRef = useRef<HTMLDivElement>(null)
   const currentQuestion = useRef('')
   const currentResponse = useRef('')
   const particlesEl = useRef<HTMLDivElement>(null)
@@ -185,17 +155,44 @@ function AppContent({
   const langRef = useRef(lang)
   langRef.current = lang
 
-  useEffect(() => {
-    setLang(detectLang())
-  }, [])
-
+  // ── Effects ────────────────────────────────────────────────
+  useEffect(() => { setLang(detectLang()) }, [])
   useEffect(() => {
     fetch('/api/journal').then(r => r.json()).then(setJournalData).catch(() => {})
   }, [])
+  useEffect(() => { generateQuestion(); return () => stopParticles() }, []) // eslint-disable-line
 
+  // ── Particle helpers ───────────────────────────────────────
+  function stopParticles() {
+    if (pInterval.current) { clearInterval(pInterval.current); pInterval.current = null }
+  }
+
+  function spawnParticle(type: Answer) {
+    if (!particlesEl.current) return
+    const p = document.createElement('div')
+    p.className = 'particle'
+    const size = Math.random() * 4 + 1
+    const dur  = Math.random() * 3 + 2
+    const dl   = Math.random() * 0.4
+    const warm = type === 'yes'
+    p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:${Math.random()*30}%;` +
+      `background:${warm
+        ? `rgba(232,${140+(Math.random()*40|0)},${30+(Math.random()*40|0)},${.4+Math.random()*.4})`
+        : `rgba(${60+(Math.random()*40|0)},${100+(Math.random()*40|0)},${140+(Math.random()*30|0)},${.3+Math.random()*.3})`};` +
+      `animation-duration:${dur}s;animation-delay:${dl}s;`
+    particlesEl.current.appendChild(p)
+    setTimeout(() => p.remove(), (dur + dl) * 1000)
+  }
+
+  function startParticles(type: Answer, n = 2) {
+    stopParticles()
+    for (let i = 0; i < 6; i++) spawnParticle(type)
+    pInterval.current = setInterval(() => { for (let i = 0; i < n; i++) spawnParticle(type) }, 150)
+  }
+
+  // ── Handlers ───────────────────────────────────────────────
   const saveSession = useCallback(async (question: string, answer: Answer, response: string, lang: Lang) => {
     try {
-      // Snapshot current generatedAt before we trigger a new journal write
       const previousGeneratedAt = journalData.journal?.generatedAt ?? null
 
       await fetch('/api/session', {
@@ -204,7 +201,6 @@ function AppContent({
         body: JSON.stringify({ question, answer, response, lang }),
       })
 
-      // Journal is now being written by Eliza async — signal pending
       setJournalStatus('pending')
 
       const tryRefetch = async (): Promise<boolean> => {
@@ -226,18 +222,13 @@ function AppContent({
         }
       }
 
-      // Attempt 1: 1.8s — catches fast Eliza responses
       await new Promise(r => setTimeout(r, 1800))
       const got1 = await tryRefetch()
       if (got1) return
 
-      // Attempt 2: another 2.5s — safety net for slow responses
       await new Promise(r => setTimeout(r, 2500))
       const got2 = await tryRefetch()
-      if (!got2) {
-        // Still nothing — soft fail, journal will appear on next load
-        setJournalStatus('error')
-      }
+      if (!got2) setJournalStatus('error')
     } catch {
       setJournalStatus('error')
     }
@@ -270,7 +261,7 @@ function AppContent({
 
     try {
       let q = await callAgent(prompt)
-      q = q.replace(/^["""]|["""]$/g, '').trim()
+      q = q.replace(/^["""]/g, '').replace(/["""]$/g, '').trim()
       if (!q.endsWith('?')) q += '?'
       currentQuestion.current = q
       setQuestion(q)
@@ -332,6 +323,17 @@ function AppContent({
     await generateResponse(type)
   }, [generateResponse, buttonsDisabled])
 
+  const handleHoverEnter = useCallback((side: Answer) => {
+    if (buttonsDisabled) return
+    setHoverSide(side)
+    startParticles(side, side === 'yes' ? 2 : 1)
+  }, [buttonsDisabled])
+
+  const handleHoverLeave = useCallback(() => {
+    setHoverSide(null)
+    stopParticles()
+  }, [])
+
   const sendChatMessage = useCallback(async () => {
     const text = chatInput.trim()
     if (!text || chatLoading) return
@@ -380,39 +382,11 @@ function AppContent({
     generateQuestion(next)
   }, [generateQuestion])
 
-  function stopParticles() {
-    if (pInterval.current) { clearInterval(pInterval.current); pInterval.current = null }
-  }
-
-  function spawnParticle(type: Answer) {
-    if (!particlesEl.current) return
-    const p = document.createElement('div')
-    p.className = 'particle'
-    const size = Math.random() * 4 + 1
-    const dur  = Math.random() * 3 + 2
-    const dl   = Math.random() * 0.4
-    const warm = type === 'yes'
-    p.style.cssText = `width:${size}px;height:${size}px;left:${Math.random()*100}%;bottom:${Math.random()*30}%;` +
-      `background:${warm
-        ? `rgba(232,${140+(Math.random()*40|0)},${30+(Math.random()*40|0)},${.4+Math.random()*.4})`
-        : `rgba(${60+(Math.random()*40|0)},${100+(Math.random()*40|0)},${140+(Math.random()*30|0)},${.3+Math.random()*.3})`};` +
-      `animation-duration:${dur}s;animation-delay:${dl}s;`
-    particlesEl.current.appendChild(p)
-    setTimeout(() => p.remove(), (dur + dl) * 1000)
-  }
-
-  function startParticles(type: Answer, n = 2) {
-    stopParticles()
-    for (let i = 0; i < 6; i++) spawnParticle(type)
-    pInterval.current = setInterval(() => { for (let i = 0; i < n; i++) spawnParticle(type) }, 150)
-  }
-
-  useEffect(() => { generateQuestion(); return () => stopParticles() }, [])  // eslint-disable-line
-
+  // ── Derived ────────────────────────────────────────────────
   const s = STATIC[lang]
-
   const displayName = isGuest ? 'guest' : session?.user?.name?.split(' ')[0]
 
+  // ── Render ─────────────────────────────────────────────────
   return (
     <>
       <style>{`
@@ -485,375 +459,60 @@ function AppContent({
 
       <div ref={particlesEl} className="particles" />
 
-      <div
-        className="split-screen"
-        style={{ opacity: showResult ? 0 : 1, pointerEvents: showResult ? 'none' : 'all' }}
-      >
-        <div
-          role="button"
-          tabIndex={buttonsDisabled ? -1 : 0}
-          aria-label={s.yes}
-          className={`split-half yes-half${hoverSide === 'yes' ? ' active' : ''}`}
-          onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('yes'); startParticles('yes', 2) } }}
-          onMouseLeave={() => { setHoverSide(null); stopParticles() }}
-          onClick={() => handleAnswer('yes')}
-          onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !buttonsDisabled) handleAnswer('yes') }}
-        >
-          <span className="split-label">{s.yes}</span>
-        </div>
-
-        <div className="split-divider" />
-
-        <div
-          role="button"
-          tabIndex={buttonsDisabled ? -1 : 0}
-          aria-label={s.no}
-          className={`split-half no-half${hoverSide === 'no' ? ' active' : ''}`}
-          onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('no'); startParticles('no', 1) } }}
-          onMouseLeave={() => { setHoverSide(null); stopParticles() }}
-          onClick={() => handleAnswer('no')}
-          onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !buttonsDisabled) handleAnswer('no') }}
-        >
-          <span className="split-label">{s.no}</span>
-        </div>
-      </div>
-
-      <div
-        className="question-float"
-        style={{ opacity: showResult ? 0 : 1, pointerEvents: 'none' }}
-      >
-        <div className="breathe-line" />
-        <div className="question-wrap">
-          {questionLoading ? (
-            <div className="question-loading">
-              <div className="dot" /><div className="dot" /><div className="dot" />
-            </div>
-          ) : (
-            <>
-              <h1 className={`question${hoverSide === 'yes' ? ' warm' : hoverSide === 'no' ? ' cool' : ''}`}>
-                {question}
-              </h1>
-              <p className="sub-question">{s.sub}</p>
-              <div
-                className="retry-hint"
-                style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', gap: '8px' }}
-                onClick={() => generateQuestion()}
-              >
-                <IconRetry />
-                <span>{s.retry}</span>
-              </div>
-            </>
-          )}
-        </div>
-        {!questionLoading && (
-          <div className="mobile-answer-btns">
-            <button
-              className={`mobile-answer-btn yes-btn${hoverSide === 'yes' ? ' active' : ''}`}
-              onClick={() => handleAnswer('yes')}
-              disabled={buttonsDisabled}
-            >
-              {s.yes}
-            </button>
-            <button
-              className={`mobile-answer-btn no-btn${hoverSide === 'no' ? ' active' : ''}`}
-              onClick={() => handleAnswer('no')}
-              disabled={buttonsDisabled}
-            >
-              {s.no}
-            </button>
-          </div>
-        )}
-
-        {showHint && (
-          <p style={{
-            marginTop: '32px',
-            fontFamily: "'Cormorant Garamond', Georgia, serif",
-            fontSize: '11px',
-            letterSpacing: '0.26em',
-            textTransform: 'uppercase',
-            color: 'rgba(152,134,112,0.52)',
-            fontStyle: 'italic',
-            animation: 'fadeIn 0.8s ease both, fadeOut 0.8s 3.5s ease forwards',
-            pointerEvents: 'none',
-          }}>
-            tap to answer
-          </p>
-        )}
-      </div>
+      <QuestionCard
+        question={question}
+        questionLoading={questionLoading}
+        buttonsDisabled={buttonsDisabled}
+        hoverSide={hoverSide}
+        showHint={showHint}
+        showResult={showResult}
+        s={s}
+        onAnswer={handleAnswer}
+        onRetry={() => generateQuestion()}
+        onHoverEnter={handleHoverEnter}
+        onHoverLeave={handleHoverLeave}
+      />
 
       {showResult && (
-        <div className={`result${resultActive ? ' active' : ''} ${answerType}-result`}>
-          <div className="result-accent-bar" />
+        <>
+          <ResponsePanel
+            answerType={answerType}
+            resultActive={resultActive}
+            resultLines={resultLines}
+            resultLoading={resultLoading}
+            chatMode={chatMode}
+            chatMessages={chatMessages}
+            chatInput={chatInput}
+            chatLoading={chatLoading}
+            showChatPrompt={showChatPrompt}
+            chatEndRef={chatEndRef}
+            s={s}
+            onBack={goBack}
+            onOpenChat={() => setChatMode(true)}
+            onCloseChat={() => setChatMode(false)}
+            onChatInputChange={setChatInput}
+            onSendMessage={sendChatMessage}
+          />
 
-          {answerType === 'yes' ? (
-            <><div className="glow-ring r1" /><div className="glow-ring r2" /><div className="glow-ring r3" /></>
-          ) : (
-            <div className="static-line" />
-          )}
-
-          <div className="result-body" style={{ transition: 'opacity 0.5s ease' }}>
-            {resultLoading ? (
-              <div className="question-loading">
-                <div className="dot" /><div className="dot" /><div className="dot" />
-              </div>
-            ) : chatMode ? (
-              <span style={{
-                display: 'block', opacity: 0.28, fontSize: '15px',
-                fontStyle: 'italic', letterSpacing: '0.04em',
-                transition: 'opacity 0.5s ease',
-              }}>
-                {resultLines[0]}
-              </span>
-            ) : (
-              resultLines.map((line, i) => (
-                <span
-                  key={`${line}-${i}`}
-                  style={{ display: 'block', opacity: 0, animation: `fadeIn 0.8s ${i * 0.45}s ease both` }}
-                >
-                  {line}
-                </span>
-              ))
-            )}
-          </div>
-
-          {!resultLoading && showChatPrompt && !chatMode && (
-            <div style={{ marginTop: '28px', opacity: 0, animation: 'fadeIn 0.8s 0.2s ease both' }}>
-              <button
-                onClick={() => setChatMode(true)}
-                style={{
-                  background: 'none', border: 'none',
-                  color: 'rgba(200,170,140,0.72)', fontSize: '14px',
-                  fontStyle: 'italic', letterSpacing: '0.08em',
-                  cursor: 'pointer', padding: '0',
-                  borderBottom: '1px solid rgba(200,170,140,0.18)',
-                  transition: 'color 0.3s, border-color 0.3s',
-                }}
-                onMouseEnter={e => {
-                  (e.target as HTMLButtonElement).style.color = 'rgba(220,190,160,0.75)'
-                  ;(e.target as HTMLButtonElement).style.borderColor = 'rgba(220,190,160,0.3)'
-                }}
-                onMouseLeave={e => {
-                  (e.target as HTMLButtonElement).style.color = 'rgba(200,170,140,0.5)'
-                  ;(e.target as HTMLButtonElement).style.borderColor = 'rgba(200,170,140,0.18)'
-                }}
-              >
-                {s.chatPrompt}
-              </button>
-            </div>
-          )}
-
-          {!resultLoading && chatMode && (
-            <div style={{
-              marginTop: '20px', width: '100%',
-              maxWidth: 'min(460px, 88vw)',
-              opacity: 0, animation: 'fadeIn 0.6s ease both',
-            }}>
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', marginBottom: '24px' }} />
-
-              <div style={{
-                maxHeight: '300px', overflowY: 'auto',
-                display: 'flex', flexDirection: 'column', gap: '20px',
-                paddingRight: '4px', marginBottom: '20px',
-                scrollbarWidth: 'none',
-              }}>
-                {chatMessages.map((msg, i) => (
-                  <div key={i} style={{
-                    display: 'flex', flexDirection: 'column',
-                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    opacity: 0, animation: `fadeIn 0.5s ${i * 0.08}s ease both`,
-                  }}>
-                    <span style={{
-                      fontSize: '14px', lineHeight: 1.9, maxWidth: '88%',
-                      color: msg.role === 'aya' ? 'rgba(210,188,165,0.82)' : 'rgba(195,178,160,0.6)',
-                      fontStyle: msg.role === 'aya' ? 'italic' : 'normal',
-                      letterSpacing: msg.role === 'aya' ? '0.03em' : '0.01em',
-                      textAlign: msg.role === 'user' ? 'right' : 'left',
-                    }}>
-                      {msg.text}
-                    </span>
-                  </div>
-                ))}
-                {chatLoading && (
-                  <div style={{ display: 'flex', gap: '6px', paddingLeft: '2px' }}>
-                    {[0,1,2].map(i => (
-                      <div key={i} className="dot" style={{ animationDelay: `${i * 0.2}s` }} />
-                    ))}
-                  </div>
-                )}
-                <div ref={chatEndRef} />
-              </div>
-
-              <div style={{
-                display: 'flex', alignItems: 'center', gap: '12px',
-                background: 'rgba(255,255,255,0.03)',
-                border: '1px solid rgba(200,170,140,0.10)',
-                borderRadius: '6px',
-                padding: '10px 12px',
-                paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
-              }}>
-                <input
-                  type="text"
-                  value={chatInput}
-                  onChange={e => setChatInput(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && sendChatMessage()}
-                  placeholder={s.chatPlaceholder}
-                  autoFocus
-                  style={{
-                    flex: 1, background: 'none', border: 'none', outline: 'none',
-                    color: 'rgba(220,200,178,0.85)', fontSize: '14px',
-                    fontStyle: 'italic', letterSpacing: '0.03em',
-                    caretColor: 'rgba(220,190,150,0.5)',
-                  }}
-                />
-                <button
-                  onClick={sendChatMessage}
-                  disabled={chatLoading || !chatInput.trim()}
-                  style={{
-                    background: 'none', border: 'none',
-                    cursor: chatInput.trim() ? 'pointer' : 'default',
-                    padding: '0',
-                    opacity: chatInput.trim() && !chatLoading ? 1 : 0.28,
-                    transition: 'opacity 0.2s ease',
-                    display: 'flex', alignItems: 'center',
-                  }}
-                >
-                  <IconSend active={!!chatInput.trim()} />
-                </button>
-              </div>
-
-              <button
-                onClick={() => setChatMode(false)}
-                style={{
-                  background: 'none', border: 'none',
-                  color: 'rgba(150,133,115,0.65)', fontSize: '12px',
-                  letterSpacing: '0.1em', cursor: 'pointer',
-                  marginTop: '16px', fontStyle: 'italic', padding: '0',
-                }}
-              >
-                {s.chatClose}
-              </button>
-            </div>
-          )}
-
-          <button className="back-btn" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <IconBack />
-            <span>{s.back}</span>
-          </button>
-
-          {!resultLoading && journalData.journal && showJournal && journalStatus !== 'pending' && (
-            <button
-              onClick={() => setShowJournalPanel(true)}
-              style={{
-                position: 'fixed', bottom: '22px', right: '24px',
-                background: 'none', border: 'none',
-                color: journalJustReady ? 'rgba(230,196,140,0.9)' : 'rgba(178,152,118,0.75)',
-                fontSize: '11px',
-                letterSpacing: '0.2em', textTransform: 'uppercase',
-                fontStyle: 'italic', cursor: 'pointer',
-                opacity: 0, animation: 'fadeIn 0.5s 0.1s ease both',
-                transition: 'color 0.4s ease, border-color 0.4s ease',
-                padding: '0 0 2px 0',
-                borderBottom: journalJustReady
-                  ? '1px solid rgba(230,196,140,0.45)'
-                  : '1px solid rgba(178,152,118,0.22)',
-              }}
-              onMouseEnter={e => {
-                e.currentTarget.style.color = 'rgba(210,182,148,0.82)'
-                e.currentTarget.style.borderBottomColor = 'rgba(210,182,148,0.42)'
-              }}
-              onMouseLeave={e => {
-                e.currentTarget.style.color = journalJustReady ? 'rgba(230,196,140,0.9)' : 'rgba(178,152,118,0.55)'
-                e.currentTarget.style.borderBottomColor = journalJustReady ? 'rgba(230,196,140,0.45)' : 'rgba(178,152,118,0.22)'
-              }}
-            >
-              {s.thisWeek}
-            </button>
-          )}
-
-          {!resultLoading && showJournal && journalStatus === 'pending' && (
-            <div style={{
-              position: 'fixed', bottom: '22px', right: '24px',
-              display: 'flex', alignItems: 'center', gap: '8px',
-              opacity: 0, animation: 'fadeIn 0.8s 0.6s ease both',
-            }}>
-              <span style={{
-                fontSize: '11px', letterSpacing: '0.18em',
-                textTransform: 'uppercase', fontStyle: 'italic',
-                color: 'rgba(178,152,118,0.45)',
-              }}>
-                {lang === 'id' ? 'refleksi sedang ditulis' : 'reflection is being written'}
-              </span>
-              <span style={{ display: 'flex', gap: '3px', alignItems: 'center' }}>
-                {[0, 1, 2].map(i => (
-                  <span key={i} style={{
-                    display: 'inline-block', width: '3px', height: '3px',
-                    borderRadius: '50%', background: 'rgba(178,152,118,0.4)',
-                    animation: `dotPulse 1.4s ${i * 0.2}s ease-in-out infinite`,
-                  }} />
-                ))}
-              </span>
-            </div>
-          )}
-
-          {!resultLoading && showJournal && journalStatus === 'error' && !journalData.journal && (
-            <p style={{
-              position: 'fixed', bottom: '22px', right: '24px',
-              margin: 0, fontSize: '11px', letterSpacing: '0.18em',
-              textTransform: 'uppercase', fontStyle: 'italic',
-              color: 'rgba(178,152,118,0.35)',
-              opacity: 0, animation: 'fadeIn 0.8s 0.5s ease both',
-            }}>
-              {lang === 'id' ? 'refleksi akan muncul sebentar lagi.' : 'reflection will appear shortly.'}
-            </p>
-          )}
-
-          {!resultLoading && showJournal && journalStatus === 'idle' && !journalData.journal && (
-            <p style={{
-              position: 'fixed', bottom: '22px', right: '24px',
-              margin: 0, fontSize: '11px', letterSpacing: '0.18em',
-              textTransform: 'uppercase', fontStyle: 'italic',
-              color: 'rgba(178,152,118,0.28)',
-              opacity: 0, animation: 'fadeIn 0.8s 1.5s ease both',
-            }}>
-              {lang === 'id' ? 'refleksi akan muncul setelah beberapa sesi.' : 'reflections will appear after a few sessions.'}
-            </p>
-          )}
-        </div>
+          <StatusBanner
+            show={showJournal}
+            resultLoading={resultLoading}
+            journalStatus={journalStatus}
+            journalData={journalData}
+            journalJustReady={journalJustReady}
+            lang={lang}
+            s={s}
+            onOpenJournal={() => setShowJournalPanel(true)}
+          />
+        </>
       )}
 
-      {showJournalPanel && journalData.journal && (
-        <div
-          className="journal-panel"
-          onClick={() => setShowJournalPanel(false)}
-        >
-          <div
-            className="journal-panel-inner"
-            onClick={e => e.stopPropagation()}
-          >
-            <p className="journal-panel-label">{s.thisWeek}</p>
-            {journalData.journal.content.split('\n').map((line, i) => (
-              <span key={i} style={{
-                display: 'block', fontSize: '16px',
-                color: 'rgba(215,195,170,0.78)', fontStyle: 'italic',
-                lineHeight: 2, opacity: 0,
-                animation: `fadeIn 0.7s ${0.1 + i * 0.25}s ease both`,
-              }}>
-                {line}
-              </span>
-            ))}
-            <button
-              onClick={() => setShowJournalPanel(false)}
-              style={{
-                marginTop: '28px', background: 'none', border: 'none',
-                color: 'rgba(150,133,115,0.4)', fontSize: '11px',
-                letterSpacing: '0.15em', fontStyle: 'italic',
-                cursor: 'pointer', padding: '0',
-              }}
-            >
-              {s.chatClose}
-            </button>
-          </div>
-        </div>
+      {showJournalPanel && (
+        <JournalPanel
+          journalData={journalData}
+          s={s}
+          onClose={() => setShowJournalPanel(false)}
+        />
       )}
 
       <div className={`status-dot${agentStatus !== 'idle' ? ` ${agentStatus}` : ''}`}>
@@ -861,18 +520,11 @@ function AppContent({
         <span>aya here</span>
       </div>
 
-      {/* user info — top left */}
-      <div className="user-info">
-        <span className="user-name">{displayName}</span>
-        <span className="info-sep">·</span>
-        {isGuest ? (
-          <a className="ghost-btn" href="/">sign in</a>
-        ) : (
-          <button className="ghost-btn" onClick={() => signOut({ callbackUrl: '/' })}>
-            sign out
-          </button>
-        )}
-      </div>
+      <UserBar
+        displayName={displayName}
+        isGuest={isGuest}
+        onSignOut={() => signOut({ callbackUrl: '/' })}
+      />
 
       {journalData.streak >= 2 && (
         <div className="streak-display">
