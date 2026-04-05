@@ -8,7 +8,7 @@ import {
 export const emotionalMemoryProvider = {
   name: "EMOTIONAL_MEMORY",
 
-  get: async (_runtime: unknown, _message: unknown, _state: unknown): Promise<string> => {
+  get: async (_runtime: unknown, _message: unknown, _state: unknown): Promise<{ text: string }> => {
     // Extract userId from ElizaOS message — injected by Next.js /api/chat
     const message = _message as { userId?: string };
     const userId = message?.userId || "default";
@@ -16,7 +16,7 @@ export const emotionalMemoryProvider = {
     const sessions = getSessions(14, userId);
 
     if (sessions.length === 0) {
-      return "EMOTIONAL HISTORY: No previous sessions. This is a fresh start for this user.";
+      return { text: "EMOTIONAL HISTORY: No previous sessions. This is a fresh start for this user." };
     }
 
     const trend = getEmotionalTrend(sessions);
@@ -47,11 +47,13 @@ export const emotionalMemoryProvider = {
         ? `\nSTREAK: ${streak} days in a row. This user is showing up consistently. You may honor that silently through the warmth of your tone.`
         : "";
 
-    return `EMOTIONAL HISTORY (last ${recent.length} sessions):
+    const text = `EMOTIONAL HISTORY (last ${recent.length} sessions):
 ${historyLines}
 
 ${trendNote}${absenceNote}${streakNote}
 
 Use this context to shape your tone and questions. Do not reference "trend", "history", or "data" explicitly to the user. Just let it inform how you show up.`;
+
+    return { text };
   },
 };

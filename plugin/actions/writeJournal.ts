@@ -52,7 +52,7 @@ export const writeJournalAction = {
     _state: unknown,
     _options: unknown,
     callback?: Function
-  ): Promise<boolean> => {
+  ): Promise<void> => {
     // Extract userId injected by Next.js /api/chat route
     const message = _message as { userId?: string };
     const userId = message?.userId || "default";
@@ -61,7 +61,7 @@ export const writeJournalAction = {
 
     if (sessions.length < 2) {
       if (callback) await callback({ text: "" });
-      return true;
+      return;
     }
 
     const week = getCurrentWeek();
@@ -84,7 +84,7 @@ export const writeJournalAction = {
     }
 
     if (callback) await callback({ text: "" });
-    return true;
+    return;
   },
 
   examples: [],
