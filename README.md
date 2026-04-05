@@ -41,9 +41,9 @@ Aya is not a chatbot. It's an agent that:
 |---|---|
 | Agent Framework | ElizaOS v2 |
 | LLM | Qwen/Qwen3.5-27B-AWQ-4bit via Nosana Inference |
-| Custom Plugin | `aya-plugin` — ElizaOS provider + action |
+| Custom Plugin | `solace-plugin` — ElizaOS provider + action |
 | Frontend | Next.js 15 + React 19 |
-| Storage | JSON file (`data/aya.json`) |
+| Storage | JSON file (`data/{userId}.json` per user) |
 | Styling | Global CSS — Cormorant Garamond |
 | Compute | Nosana Decentralized GPU |
 
@@ -58,7 +58,7 @@ Aya is not a chatbot. It's an agent that:
     ↓ GET  /api/journal       → fetch streak & weekly reflection
 [Next.js — port 3000]
     ↓ proxies to
-[ElizaOS agent — port 3001]   ← Aya character + aya-plugin
+[ElizaOS agent — port 3001]   ← Aya character + solace-plugin
     ↑ EMOTIONAL_MEMORY provider injects history into every message
     ↑ WRITE_JOURNAL action generates weekly reflection autonomously
     ↓ calls
@@ -67,7 +67,7 @@ Aya is not a chatbot. It's an agent that:
 
 ---
 
-## Custom Plugin: aya-plugin
+## Custom Plugin: solace-plugin
 
 ### `EMOTIONAL_MEMORY` Provider
 Runs on **every message**. Injects:
@@ -79,7 +79,7 @@ Runs on **every message**. Injects:
 Aya uses this to adjust tone and question depth — silently, without ever mentioning it.
 
 ### `WRITE_JOURNAL` Action
-Triggered autonomously after each completed session. Calls Qwen via Nosana GPU to write a 3–4 line poetic weekly reflection. Saved to `data/aya.json`. Displayed in the UI after responses.
+Triggered autonomously after each completed session. Calls Qwen via Nosana GPU to write a 3–4 line poetic weekly reflection. Saved to `data/{userId}.json`. Displayed in the UI after responses.
 
 ---
 
@@ -134,8 +134,13 @@ Update `nos_job_def/nosana_eliza_job_definition.json` with your Docker Hub usern
 | `OPENAI_API_KEY` | `nosana` | Nosana endpoint placeholder |
 | `OPENAI_API_URL` | Nosana endpoint | Qwen3.5-27B inference |
 | `MODEL_NAME` | `Qwen/Qwen3.5-27B-AWQ-4bit` | Model served by Nosana |
+| `GOOGLE_CLIENT_ID` | — | Google OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | — | Google OAuth client secret |
+| `NEXTAUTH_SECRET` | — | Random secret (`openssl rand -base64 32`) |
+| `NEXTAUTH_URL` | `http://localhost:3000` | App base URL (prod: Nosana URL) |
+| `OPENAI_BASE_URL` | Nosana endpoint | Required by ElizaOS plugin-openai |
 
-> **Note:** `data/aya.json` is ephemeral on Nosana — sessions reset if the container restarts. This is a known limitation of the MVP.
+> **Note:** `data/{userId}.json` is ephemeral on Nosana — sessions reset if the container restarts. This is a known limitation of the MVP.
 
 ---
 
