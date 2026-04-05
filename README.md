@@ -1,33 +1,49 @@
-# Sentinel — Solana Wallet Security Agent
+# are you happy?
 
-![Sentinel](./assets/NosanaXEliza.jpg)
+![are you happy banner](./assets/NosanaXEliza.jpg)
 
-**Sentinel** is an AI-powered Solana wallet security agent built with ElizaOS and deployed on Nosana decentralized GPU infrastructure.
+**are you happy?** is an introspective emotional companion built with ElizaOS and deployed on Nosana's decentralized GPU network.
 
-It scans your wallet for dangerous token delegates and approvals, explains the risks in plain language, and guides you through revoking them — running 24/7 on decentralized compute you control.
+It asks you one quiet question at a time — and responds to your answer with warmth, not advice.
 
-> "In 2026, AI drainers hunt wallets autonomously. Sentinel fights back."
+> "are you carrying something heavy today?"
 
 ---
 
 ## What It Does
 
-- **Scan** — Detects all active token delegates in your Solana wallet via on-chain RPC
-- **Assess** — Classifies each delegate as High Risk or Medium Risk based on allowance size
-- **Explain** — Uses Qwen3.5-27B via Nosana to explain risks in plain human language
-- **Guide** — Provides step-by-step revoke instructions for dangerous delegates
+- **Asks** — generates short, poetic introspective questions using Qwen3.5 via Nosana GPU
+- **Listens** — presents a simple yes / no choice, no judgment
+- **Responds** — writes an empathetic 3–5 line reply tailored to your answer
+- **Bilingual** — Indonesian 🇮🇩 and English 🇬🇧, switch anytime
 
 ---
 
 ## Tech Stack
 
 | Layer | Technology |
-|-------|-----------|
-| Agent Framework | ElizaOS v1.7 |
-| LLM | Qwen3.5-27B via Nosana |
-| Blockchain | Solana web3.js |
-| Frontend | Next.js 15 + Tailwind |
+|---|---|
+| Agent Framework | ElizaOS v1 |
+| LLM | Qwen3.5-4B via Nosana Inference |
+| Frontend | Next.js 15 + React 19 |
+| Styling | Global CSS — Cormorant Garamond |
 | Compute | Nosana Decentralized GPU |
+
+---
+
+## Architecture
+
+```
+[Browser]
+    ↓ POST /api/chat (Next.js route)
+[Next.js — port 3000]
+    ↓ proxies to
+[ElizaOS agent — port 3001]  ← Solace character
+    ↓ calls
+[Qwen3.5 via Nosana GPU endpoint]
+```
+
+The frontend never calls the AI directly. Everything routes through the ElizaOS agent, which runs as a separate process inside the same Docker container.
 
 ---
 
@@ -40,74 +56,86 @@ It scans your wallet for dangerous token delegates and approvals, explains the r
 ### Setup
 
 ```bash
-# Clone and install
+# Clone
 git clone https://github.com/SZtch/sentinel
 cd sentinel
+
+# Environment
+cp env.example .env
+# Fill in your Nosana endpoint (or use Ollama locally)
+
+# Install
 npm install
 
-# Configure environment
-cp .env.example .env
-# Fill in your Nosana endpoint and Solana RPC URL
-
-# Run frontend
-npm run dev
-
-# Run ElizaOS agent (separate terminal)
+# Run ElizaOS agent (terminal 1) — port 3001
 npm run dev:agent
+
+# Run Next.js frontend (terminal 2) — port 3000
+npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) to use the dashboard.
+Open http://localhost:3000
 
 ---
 
-## Environment Variables
+## Agent Character
 
-```env
-OPENAI_API_KEY=nosana
-OPENAI_BASE_URL=https://your-nosana-endpoint.node.k8s.prd.nos.ci/v1
-OPENAI_SMALL_MODEL=Qwen/Qwen3.5-4B
-OPENAI_LARGE_MODEL=Qwen/Qwen3.5-4B
-SOLANA_RPC_URL=https://api.mainnet-beta.solana.com
-```
+The agent is named **Solace** — defined in `characters/agent.character.json`.
+
+It responds to two mode prefixes the frontend sends:
+
+| Prefix | Behavior |
+|---|---|
+| `[MODE:QUESTION]` | Generates one short introspective question |
+| `[MODE:RESPONSE]` | Generates an empathetic 3–5 line reply |
+
+All responses are short, lowercase, poetic — no advice, no lists.
 
 ---
 
 ## Deploy to Nosana
 
 ```bash
-# Build Docker image
-docker build -t yourusername/sentinel:latest .
+# Build
+docker build -t yourusername/are-you-happy:latest .
 
-# Push to Docker Hub
-docker push yourusername/sentinel:latest
+# Push
+docker push yourusername/are-you-happy:latest
 
 # Deploy via Nosana dashboard
-# https://dashboard.nosana.com/deploy
+# https://deploy.nosana.com
 ```
 
-Update `nos_job_def/nosana_eliza_job_definition.json` with your Docker image name before deploying.
+Update `nos_job_def/nosana_eliza_job_definition.json` with your image name before deploying.
+
+The container exposes port **3000** (Next.js). ElizaOS runs internally on **3001**.
+
+---
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `SERVER_PORT` | `3001` | ElizaOS agent port — must not be 3000 |
+| `ELIZA_API_URL` | `http://localhost:3001` | Used by Next.js to proxy to the agent |
+| `ELIZA_AGENT_ID` | `solace` | Agent name/slug |
+| `OPENAI_API_KEY` | `nosana` | Placeholder for Nosana endpoint |
+| `OPENAI_API_URL` | Nosana endpoint URL | Qwen3.5 inference endpoint |
 
 ---
 
 ## Why Nosana?
 
-Sentinel runs 24/7 monitoring wallets — this requires reliable, always-on compute. Nosana's decentralized GPU network provides exactly that, without the centralized control of AWS or GCP. Your agent runs on infrastructure you own, not infrastructure that owns you.
+The Solace agent runs inference on Qwen3.5 — which needs GPU compute. Nosana's decentralized network provides that compute without locking into AWS or GCP.
 
----
-
-## Roadmap
-
-- [ ] Wallet connection via Privy (no Phantom required)
-- [ ] One-click on-chain revoke transaction
-- [ ] 24/7 autonomous monitoring with Telegram alerts
-- [ ] Token name resolution (USDC, SOL instead of mint addresses)
-- [ ] Multi-wallet dashboard
+Every question you're asked, every response you receive — processed on community-owned GPU infrastructure.
 
 ---
 
 ## Submission
 
-Built for the **Nosana x ElizaOS Builders Challenge** on Superteam Earn.
+Built for the **Nosana x ElizaOS Builders' Challenge** on Superteam Earn.
 
-- GitHub: [github.com/SZtch/sentinel](https://github.com/SZtch/sentinel)
-- Built with ElizaOS · Deployed on Nosana · Powered by Qwen3.5
+- **GitHub**: [github.com/SZtch/sentinel](https://github.com/SZtch/sentinel)
+- **Stack**: ElizaOS · Next.js 15 · Qwen3.5 · Nosana GPU
+- **Hashtag**: #NosanaAgentChallenge

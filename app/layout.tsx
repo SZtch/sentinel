@@ -1,18 +1,27 @@
-import "./globals.css";
+import type { Metadata } from 'next'
+import { Cormorant_Garamond } from 'next/font/google'
+import './globals.css'
 
-export const metadata = {
-  title: "Sentinel",
-  description: "Solana wallet security scanner",
-};
+const cormorant = Cormorant_Garamond({
+  weight: ['300', '400'],
+  style: ['normal', 'italic'],
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+export const metadata: Metadata = {
+  title: 'are you happy?',
+  description: 'An introspective emotional companion — powered by ElizaOS on Nosana',
+}
 
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="id">
+      <body className={cormorant.className}>{children}</body>
     </html>
-  );
+  )
 }
