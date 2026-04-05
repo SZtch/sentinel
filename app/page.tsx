@@ -224,6 +224,27 @@ export default function Landing() {
         }
         .lang-toggle.visible { opacity: 1; }
         .lang-toggle:hover { color: rgba(222,192,158,0.98); border-color: rgba(202,172,132,0.45); }
+
+        @media (max-width: 768px) {
+          .landing {
+            justify-content: center;
+            min-height: 100dvh;
+            padding-bottom: 12vh;
+          }
+
+          .title {
+            font-size: clamp(44px, 14vw, 72px);
+          }
+
+          .subtitle {
+            margin-bottom: 40px;
+          }
+
+          .footer {
+            bottom: 16px;
+            font-size: 11px;
+          }
+        }
       `}</style>
 
       {/* lang switcher — top right */}

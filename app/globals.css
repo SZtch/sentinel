@@ -207,8 +207,8 @@ body::before {
     background: radial-gradient(ellipse 80% 60% at 50% 80%, rgba(35,65,95,0.16) 0%, transparent 65%);
   }
 
-  .yes-half { justify-content: center; align-items: flex-end; padding-bottom: 12vh; }
-  .no-half  { justify-content: center; align-items: flex-end; padding-bottom: 12vh; }
+  .yes-half { justify-content: center; align-items: flex-end; padding-bottom: 8vh; }
+  .no-half  { justify-content: center; align-items: flex-start; padding-top: 8vh; }
 
   /* Labels: border bawah untuk keduanya */
   .yes-half .split-label {
@@ -237,6 +237,43 @@ body::before {
   /* Question float: kurangi padding vertikal di mobile */
   .question-float {
     padding-bottom: min(10vh, 60px);
+    padding-left: clamp(16px, 5vw, 32px);
+    padding-right: clamp(16px, 5vw, 32px);
+  }
+
+  /* Question text lebih kecil di mobile */
+  .question {
+    font-size: clamp(1.7rem, 8vw, 2.4rem);
+  }
+
+  /* Breathe line lebih pendek */
+  .breathe-line {
+    height: clamp(18px, 3vh, 32px);
+    margin-bottom: clamp(12px, 2vh, 24px);
+  }
+
+  /* Status dot pindah kanan biar ga tabrakan sama nosana badge */
+  .status-dot {
+    left: auto !important;
+    right: 20px !important;
+    transform: none !important;
+    bottom: 18px;
+  }
+
+  /* Result page: compact */
+  .result {
+    padding: 80px 24px 100px;
+  }
+
+  .result-body {
+    font-size: clamp(1.1rem, 5vw, 1.4rem);
+    line-height: 2;
+    margin-bottom: clamp(24px, 4vh, 40px);
+  }
+
+  /* User info: sedikit lebih kecil */
+  .user-name {
+    font-size: 15px;
   }
 }
 
