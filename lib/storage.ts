@@ -1,4 +1,3 @@
-// Next.js side storage — reads/writes the same data/solace.json as the plugin
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 
@@ -22,50 +21,58 @@ export type JournalEntry = {
 type StorageData = { sessions: Session[]; journal: JournalEntry[] };
 
 const DATA_DIR = join(process.cwd(), "data");
-const FILE = join(DATA_DIR, "solace.json");
+
+function userFile(userId: string): string {
+  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+  return join(DATA_DIR, `${safe}.json`);
+}
 
 function ensureDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function load(): StorageData {
+function load(userId: string): StorageData {
   ensureDir();
-  if (!existsSync(FILE)) return { sessions: [], journal: [] };
-  try { return JSON.parse(readFileSync(FILE, "utf-8")); }
-  catch { return { sessions: [], journal: [] }; }
+  const file = userFile(userId);
+  if (!existsSync(file)) return { sessions: [], journal: [] };
+  try {
+    return JSON.parse(readFileSync(file, "utf-8"));
+  } catch {
+    return { sessions: [], journal: [] };
+  }
 }
 
-function save(data: StorageData) {
+function save(userId: string, data: StorageData) {
   ensureDir();
-  writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+  writeFileSync(userFile(userId), JSON.stringify(data, null, 2), "utf-8");
 }
 
-export function addSession(session: Session) {
-  const data = load();
+export function addSession(session: Session, userId: string) {
+  const data = load(userId);
   data.sessions.push(session);
-  save(data);
+  save(userId, data);
 }
 
-export function getSessions(limit = 30): Session[] {
-  return load().sessions.slice(-limit);
+export function getSessions(limit = 30, userId: string): Session[] {
+  return load(userId).sessions.slice(-limit);
 }
 
-export function getLatestJournal(): JournalEntry | null {
-  const entries = load().journal;
+export function getLatestJournal(userId: string): JournalEntry | null {
+  const entries = load(userId).journal;
   return entries.length ? entries[entries.length - 1] : null;
 }
 
-export function addJournalEntry(entry: JournalEntry) {
-  const data = load();
-  const idx = data.journal.findIndex(j => j.week === entry.week);
+export function addJournalEntry(entry: JournalEntry, userId: string) {
+  const data = load(userId);
+  const idx = data.journal.findIndex((j) => j.week === entry.week);
   if (idx >= 0) data.journal[idx] = entry;
   else data.journal.push(entry);
-  save(data);
+  save(userId, data);
 }
 
 export function getStreak(sessions: Session[]): number {
   if (!sessions.length) return 0;
-  const uniqueDates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+  const uniqueDates = [...new Set(sessions.map((s) => s.date))].sort().reverse();
   const now = new Date();
   let streak = 0;
   for (let i = 0; i < uniqueDates.length; i++) {

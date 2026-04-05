@@ -3,53 +3,58 @@ import { join } from "path";
 import type { Session, JournalEntry, StorageData, EmotionalTrend } from "./types.js";
 
 const DATA_DIR = join(process.cwd(), "data");
-const FILE = join(DATA_DIR, "solace.json");
+
+function userFile(userId: string): string {
+  const safe = userId.replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 64);
+  return join(DATA_DIR, `${safe}.json`);
+}
 
 function ensureDir() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 }
 
-function load(): StorageData {
+function load(userId: string): StorageData {
   ensureDir();
-  if (!existsSync(FILE)) return { sessions: [], journal: [] };
+  const file = userFile(userId);
+  if (!existsSync(file)) return { sessions: [], journal: [] };
   try {
-    return JSON.parse(readFileSync(FILE, "utf-8"));
+    return JSON.parse(readFileSync(file, "utf-8"));
   } catch {
     return { sessions: [], journal: [] };
   }
 }
 
-function save(data: StorageData) {
+function save(userId: string, data: StorageData) {
   ensureDir();
-  writeFileSync(FILE, JSON.stringify(data, null, 2), "utf-8");
+  writeFileSync(userFile(userId), JSON.stringify(data, null, 2), "utf-8");
 }
 
-export function getSessions(limit = 30): Session[] {
-  return load().sessions.slice(-limit);
+export function getSessions(limit = 30, userId = "default"): Session[] {
+  return load(userId).sessions.slice(-limit);
 }
 
-export function addSession(session: Session) {
-  const data = load();
+export function addSession(session: Session, userId = "default") {
+  const data = load(userId);
   data.sessions.push(session);
-  save(data);
+  save(userId, data);
 }
 
-export function getJournalEntries(): JournalEntry[] {
-  return load().journal;
+export function getJournalEntries(userId = "default"): JournalEntry[] {
+  return load(userId).journal;
 }
 
-export function addJournalEntry(entry: JournalEntry) {
-  const data = load();
-  const idx = data.journal.findIndex(j => j.week === entry.week);
+export function addJournalEntry(entry: JournalEntry, userId = "default") {
+  const data = load(userId);
+  const idx = data.journal.findIndex((j) => j.week === entry.week);
   if (idx >= 0) data.journal[idx] = entry;
   else data.journal.push(entry);
-  save(data);
+  save(userId, data);
 }
 
 export function getEmotionalTrend(sessions: Session[]): EmotionalTrend {
   const recent = sessions.slice(-7);
   if (recent.length < 3) return "stable";
-  const yesRatio = recent.filter(s => s.answer === "yes").length / recent.length;
+  const yesRatio = recent.filter((s) => s.answer === "yes").length / recent.length;
   if (yesRatio <= 0.3) return "declining";
   if (yesRatio >= 0.7) return "positive";
   return "stable";
@@ -57,7 +62,7 @@ export function getEmotionalTrend(sessions: Session[]): EmotionalTrend {
 
 export function getStreak(sessions: Session[]): number {
   if (!sessions.length) return 0;
-  const uniqueDates = [...new Set(sessions.map(s => s.date))].sort().reverse();
+  const uniqueDates = [...new Set(sessions.map((s) => s.date))].sort().reverse();
   let streak = 0;
   const now = new Date();
   for (let i = 0; i < uniqueDates.length; i++) {

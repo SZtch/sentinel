@@ -1,8 +1,8 @@
-# are you happy?
+# oneQ
 
 ![are you happy banner](./assets/NosanaXEliza.jpg)
 
-**are you happy?** is an introspective emotional companion built with ElizaOS v2 and deployed on Nosana's decentralized GPU network.
+**oneQ** is an introspective emotional companion built with ElizaOS v2 and deployed on Nosana's decentralized GPU network.
 
 It asks you one quiet question at a time — remembers how you've been — and responds with warmth, not advice.
 
@@ -23,7 +23,7 @@ It asks you one quiet question at a time — remembers how you've been — and r
 
 ## What Makes It Agentic
 
-Solace is not a chatbot. It's an agent that:
+Aya is not a chatbot. It's an agent that:
 
 | Behavior | How |
 |---|---|
@@ -41,9 +41,9 @@ Solace is not a chatbot. It's an agent that:
 |---|---|
 | Agent Framework | ElizaOS v2 |
 | LLM | Qwen/Qwen3.5-27B-AWQ-4bit via Nosana Inference |
-| Custom Plugin | `solace-plugin` — ElizaOS provider + action |
+| Custom Plugin | `aya-plugin` — ElizaOS provider + action |
 | Frontend | Next.js 15 + React 19 |
-| Storage | JSON file (`data/solace.json`) |
+| Storage | JSON file (`data/aya.json`) |
 | Styling | Global CSS — Cormorant Garamond |
 | Compute | Nosana Decentralized GPU |
 
@@ -58,7 +58,7 @@ Solace is not a chatbot. It's an agent that:
     ↓ GET  /api/journal       → fetch streak & weekly reflection
 [Next.js — port 3000]
     ↓ proxies to
-[ElizaOS agent — port 3001]   ← Solace character + solace-plugin
+[ElizaOS agent — port 3001]   ← Aya character + aya-plugin
     ↑ EMOTIONAL_MEMORY provider injects history into every message
     ↑ WRITE_JOURNAL action generates weekly reflection autonomously
     ↓ calls
@@ -67,7 +67,7 @@ Solace is not a chatbot. It's an agent that:
 
 ---
 
-## Custom Plugin: solace-plugin
+## Custom Plugin: aya-plugin
 
 ### `EMOTIONAL_MEMORY` Provider
 Runs on **every message**. Injects:
@@ -76,10 +76,10 @@ Runs on **every message**. Injects:
 - Days since last session (absence detection)
 - Streak length
 
-Solace uses this to adjust tone and question depth — silently, without ever mentioning it.
+Aya uses this to adjust tone and question depth — silently, without ever mentioning it.
 
 ### `WRITE_JOURNAL` Action
-Triggered autonomously after each completed session. Calls Qwen via Nosana GPU to write a 3–4 line poetic weekly reflection. Saved to `data/solace.json`. Displayed in the UI after responses.
+Triggered autonomously after each completed session. Calls Qwen via Nosana GPU to write a 3–4 line poetic weekly reflection. Saved to `data/aya.json`. Displayed in the UI after responses.
 
 ---
 
@@ -114,10 +114,10 @@ Open http://localhost:3000
 
 ```bash
 # Build
-docker build -t YOUR_DOCKERHUB_USERNAME/are-you-happy:latest .
+docker build -t YOUR_DOCKERHUB_USERNAME/oneq:latest .
 
 # Push
-docker push YOUR_DOCKERHUB_USERNAME/are-you-happy:latest
+docker push YOUR_DOCKERHUB_USERNAME/oneq:latest
 ```
 
 Update `nos_job_def/nosana_eliza_job_definition.json` with your Docker Hub username, then deploy via [deploy.nosana.com](https://deploy.nosana.com).
@@ -130,12 +130,12 @@ Update `nos_job_def/nosana_eliza_job_definition.json` with your Docker Hub usern
 |---|---|---|
 | `SERVER_PORT` | `3001` | ElizaOS agent port |
 | `ELIZA_API_URL` | `http://localhost:3001` | Next.js → agent proxy |
-| `ELIZA_AGENT_ID` | `solace` | Agent name |
+| `ELIZA_AGENT_ID` | `aya` | Agent name |
 | `OPENAI_API_KEY` | `nosana` | Nosana endpoint placeholder |
 | `OPENAI_API_URL` | Nosana endpoint | Qwen3.5-27B inference |
 | `MODEL_NAME` | `Qwen/Qwen3.5-27B-AWQ-4bit` | Model served by Nosana |
 
-> **Note:** `data/solace.json` is ephemeral on Nosana — sessions reset if the container restarts. This is a known limitation of the MVP.
+> **Note:** `data/aya.json` is ephemeral on Nosana — sessions reset if the container restarts. This is a known limitation of the MVP.
 
 ---
 

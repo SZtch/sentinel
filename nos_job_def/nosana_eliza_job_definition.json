@@ -1,9 +1,9 @@
 {
   "ops": [
     {
-      "id": "are-you-happy-agent",
+      "id": "oneq-agent",
       "args": {
-        "image": "YOUR_DOCKERHUB_USERNAME/are-you-happy:latest",
+        "image": "YOUR_DOCKERHUB_USERNAME/oneq:latest",
         "expose": 3000,
         "env": {
           "OPENAI_API_KEY": "nosana",
@@ -19,8 +19,12 @@
           "MODEL_NAME": "Qwen/Qwen3.5-27B-AWQ-4bit",
           "SERVER_PORT": "3001",
           "ELIZA_API_URL": "http://localhost:3001",
-          "ELIZA_AGENT_ID": "solace",
-          "NODE_ENV": "production"
+          "ELIZA_AGENT_ID": "aya",
+          "NODE_ENV": "production",
+          "GOOGLE_CLIENT_ID": "YOUR_GOOGLE_CLIENT_ID",
+          "GOOGLE_CLIENT_SECRET": "YOUR_GOOGLE_CLIENT_SECRET",
+          "NEXTAUTH_SECRET": "YOUR_NEXTAUTH_SECRET",
+          "NEXTAUTH_URL": "https://YOUR_NOSANA_DEPLOYMENT_URL"
         }
       },
       "execution": {

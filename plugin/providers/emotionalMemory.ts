@@ -9,7 +9,11 @@ export const emotionalMemoryProvider = {
   name: "EMOTIONAL_MEMORY",
 
   get: async (_runtime: unknown, _message: unknown, _state: unknown): Promise<string> => {
-    const sessions = getSessions(14);
+    // Extract userId from ElizaOS message — injected by Next.js /api/chat
+    const message = _message as { userId?: string };
+    const userId = message?.userId || "default";
+
+    const sessions = getSessions(14, userId);
 
     if (sessions.length === 0) {
       return "EMOTIONAL HISTORY: No previous sessions. This is a fresh start for this user.";
@@ -21,7 +25,7 @@ export const emotionalMemoryProvider = {
     const recent = sessions.slice(-7);
 
     const historyLines = recent
-      .map(s => `- ${s.date} [${s.lang}]: "${s.question}" → ${s.answer}`)
+      .map((s) => `- ${s.date} [${s.lang}]: "${s.question}" → ${s.answer}`)
       .join("\n");
 
     const trendNote = {

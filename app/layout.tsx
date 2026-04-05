@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { Cormorant_Garamond } from 'next/font/google'
+import Providers from './providers'
 import './globals.css'
 
 const cormorant = Cormorant_Garamond({
@@ -10,7 +11,7 @@ const cormorant = Cormorant_Garamond({
 })
 
 export const metadata: Metadata = {
-  title: 'are you happy?',
+  title: 'oneQ',
   description: 'An introspective emotional companion — powered by ElizaOS on Nosana',
 }
 
@@ -21,7 +22,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={cormorant.className}>{children}</body>
+      <body className={cormorant.className}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   )
 }

@@ -1,5 +1,5 @@
 {
-  "name": "are-you-happy",
+  "name": "oneq",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -17,6 +17,7 @@
     "@elizaos/plugin-openai": "1.0.0",
     "solace-plugin": "file:./plugin",
     "next": "^15.2.4",
+    "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
   },
