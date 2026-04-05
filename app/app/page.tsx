@@ -116,10 +116,16 @@ export default function Home() {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#0d0b0a', color: 'rgba(200,180,160,0.55)', fontStyle: 'italic', fontSize: '13px',
-        letterSpacing: '0.1em',
+        background: '#0c0a09', /* FIX: unified warm-black */
+        color: 'rgba(168,150,132,0.72)',
+        fontStyle: 'italic', fontSize: '13px', letterSpacing: '0.18em',
+        animation: 'fadeIn 1s ease both',
       }}>
-        ...
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div className="dot" />
+          <div className="dot" style={{ animationDelay: '0.2s' }} />
+          <div className="dot" style={{ animationDelay: '0.4s' }} />
+        </div>
       </div>
     )
   }
@@ -351,10 +357,14 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
         style={{ opacity: showResult ? 0 : 1, pointerEvents: showResult ? 'none' : 'all' }}
       >
         <div
+          role="button"
+          tabIndex={buttonsDisabled ? -1 : 0}
+          aria-label={s.yes}
           className={`split-half yes-half${hoverSide === 'yes' ? ' active' : ''}`}
           onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('yes'); startParticles('yes', 2) } }}
           onMouseLeave={() => { setHoverSide(null); stopParticles() }}
           onClick={() => handleAnswer('yes')}
+          onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !buttonsDisabled) handleAnswer('yes') }}
         >
           <span className="split-label">{s.yes}</span>
         </div>
@@ -362,10 +372,14 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
         <div className="split-divider" />
 
         <div
+          role="button"
+          tabIndex={buttonsDisabled ? -1 : 0}
+          aria-label={s.no}
           className={`split-half no-half${hoverSide === 'no' ? ' active' : ''}`}
           onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('no'); startParticles('no', 1) } }}
           onMouseLeave={() => { setHoverSide(null); stopParticles() }}
           onClick={() => handleAnswer('no')}
+          onKeyDown={e => { if ((e.key === 'Enter' || e.key === ' ') && !buttonsDisabled) handleAnswer('no') }}
         >
           <span className="split-label">{s.no}</span>
         </div>
@@ -510,8 +524,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
 
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
-                borderBottom: '1px solid rgba(200,170,140,0.12)',
+                borderBottom: '1px solid rgba(200,170,140,0.14)',
                 paddingBottom: '10px',
+                /* FIX: respect virtual keyboard on mobile */
+                paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
               }}>
                 <input
                   type="text"
@@ -533,7 +549,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   style={{
                     background: 'none', border: 'none',
                     cursor: chatInput.trim() ? 'pointer' : 'default',
-                    padding: '0', transition: 'opacity 0.2s',
+                    padding: '0',
+                    /* FIX: explicit opacity so user knows when button is inactive */
+                    opacity: chatInput.trim() && !chatLoading ? 1 : 0.28,
+                    transition: 'opacity 0.2s ease',
                     display: 'flex', alignItems: 'center',
                   }}
                 >
@@ -567,15 +586,23 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
               style={{
                 position: 'fixed', bottom: '22px', right: '24px',
                 background: 'none', border: 'none',
-                color: 'rgba(170,148,120,0.35)', fontSize: '11px',
+                /* FIX: raised opacity + underline hint so users know it's tappable */
+                color: 'rgba(178,152,118,0.55)', fontSize: '11px',
                 letterSpacing: '0.2em', textTransform: 'uppercase',
                 fontStyle: 'italic', cursor: 'pointer',
                 opacity: 0, animation: 'fadeIn 0.8s 1s ease both',
-                transition: 'color 0.3s',
-                padding: '0',
+                transition: 'color 0.3s, border-color 0.3s',
+                padding: '0 0 2px 0',
+                borderBottom: '1px solid rgba(178,152,118,0.22)',
               }}
-              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(200,175,145,0.6)')}
-              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(170,148,120,0.35)')}
+              onMouseEnter={e => {
+                e.currentTarget.style.color = 'rgba(210,182,148,0.82)'
+                e.currentTarget.style.borderBottomColor = 'rgba(210,182,148,0.42)'
+              }}
+              onMouseLeave={e => {
+                e.currentTarget.style.color = 'rgba(178,152,118,0.55)'
+                e.currentTarget.style.borderBottomColor = 'rgba(178,152,118,0.22)'
+              }}
             >
               {s.thisWeek}
             </button>

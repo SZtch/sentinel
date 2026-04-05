@@ -109,7 +109,7 @@ export default function Landing() {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 13px;
           letter-spacing: 0.22em;
-          color: rgba(180, 140, 90, 0.65);
+          color: rgba(182, 144, 94, 0.78); /* FIX: raised from 0.65 */
           text-transform: uppercase;
           margin-bottom: 32px;
           opacity: 0;
@@ -137,7 +137,7 @@ export default function Landing() {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 16px;
           font-style: italic;
-          color: rgba(180, 155, 120, 0.68);
+          color: rgba(182, 158, 124, 0.82); /* FIX: raised from 0.68 */
           margin-bottom: 56px;
           opacity: 0;
           transition: opacity 1.2s ease 0.5s;
@@ -158,7 +158,7 @@ export default function Landing() {
           background: rgba(255, 255, 255, 0.04);
           border: 1px solid rgba(200, 170, 120, 0.18);
           border-radius: 6px;
-          color: rgba(210, 185, 150, 0.8);
+          color: rgba(212, 188, 154, 0.9); /* FIX: raised from 0.8 */
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 14px;
           letter-spacing: 0.08em;
@@ -183,6 +183,10 @@ export default function Landing() {
           opacity: 0.5;
           cursor: default;
         }
+        .signin-btn:focus-visible {
+          outline: 1px solid rgba(200,170,120,0.35);
+          outline-offset: 4px;
+        }
 
         .footer {
           position: fixed;
@@ -192,7 +196,7 @@ export default function Landing() {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 12px;
           letter-spacing: 0.14em;
-          color: rgba(150, 120, 90, 0.5);
+          color: rgba(152, 124, 95, 0.62); /* FIX: raised from 0.5 */
           white-space: nowrap;
           opacity: 0;
           transition: opacity 1.2s ease 1.2s;
@@ -213,13 +217,13 @@ export default function Landing() {
           font-size: 0.72rem;
           letter-spacing: 0.22em;
           text-transform: uppercase;
-          color: rgba(180,155,120,0.55);
+          color: rgba(185,160,126,0.72); /* FIX: raised from 0.55 */
           padding: 5px 10px;
           opacity: 0;
           transition: opacity 1.2s ease 1.5s, color 0.3s ease, border-color 0.3s ease;
         }
         .lang-toggle.visible { opacity: 1; }
-        .lang-toggle:hover { color: rgba(220,190,155,0.9); border-color: rgba(200,170,130,0.35); }
+        .lang-toggle:hover { color: rgba(222,192,158,0.98); border-color: rgba(202,172,132,0.45); }
       `}</style>
 
       {/* lang switcher — top right */}
