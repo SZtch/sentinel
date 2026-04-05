@@ -23,7 +23,7 @@ const STATIC = {
   en: {
     yes: 'yes', no: 'no',
     sub: 'answer honestly',
-    back: '← go back',
+    back: 'go back',
     retry: '↺ new question',
     streak: 'days',
     thisWeek: 'this week',
@@ -83,7 +83,7 @@ export default function Home() {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#0d0b0a', color: 'rgba(200,180,160,0.35)', fontStyle: 'italic', fontSize: '13px',
+        background: '#0d0b0a', color: 'rgba(200,180,160,0.55)', fontStyle: 'italic', fontSize: '13px',
         letterSpacing: '0.1em',
       }}>
         ...
@@ -403,16 +403,16 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
               width: '100%',
             }}>
               <p style={{
-                fontSize: '9px', letterSpacing: '0.2em',
-                color: 'rgba(180,150,120,0.35)', marginBottom: '12px',
+                fontSize: '13px', letterSpacing: '0.2em',
+                color: 'rgba(180,150,120,0.5)', marginBottom: '12px',
                 textTransform: 'uppercase',
               }}>
                 {s.thisWeek}
               </p>
               {journalData.journal.content.split('\n').map((line, i) => (
                 <span key={i} style={{
-                  display: 'block', fontSize: '13px',
-                  color: 'rgba(210,190,168,0.55)', fontStyle: 'italic',
+                  display: 'block', fontSize: '15px',
+                  color: 'rgba(210,190,168,0.7)', fontStyle: 'italic',
                   lineHeight: 1.9, opacity: 0,
                   animation: `fadeIn 0.7s ${0.3 + i * 0.3}s ease both`,
                 }}>
@@ -432,10 +432,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 onClick={() => setChatMode(true)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(200,170,140,0.4)', fontSize: '12px',
+                  color: 'rgba(200,170,140,0.6)', fontSize: '15px',
                   fontStyle: 'italic', letterSpacing: '0.08em',
                   cursor: 'pointer', padding: '4px 0',
-                  borderBottom: '1px solid rgba(200,170,140,0.15)',
+                  borderBottom: '1px solid rgba(200,170,140,0.2)',
                   transition: 'color 0.3s, border-color 0.3s',
                 }}
                 onMouseEnter={e => {
@@ -479,12 +479,12 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                     animation: `fadeIn 0.5s ${i * 0.1}s ease both`,
                   }}>
                     <span style={{
-                      fontSize: '13px',
-                      lineHeight: 1.75,
+                      fontSize: '15px',
+                      lineHeight: 1.85,
                       maxWidth: '85%',
                       color: msg.role === 'aya'
-                        ? 'rgba(215,195,170,0.75)'
-                        : 'rgba(180,165,148,0.55)',
+                        ? 'rgba(215,195,170,0.85)'
+                        : 'rgba(180,165,148,0.65)',
                       fontStyle: msg.role === 'aya' ? 'italic' : 'normal',
                       letterSpacing: '0.02em',
                       textAlign: msg.role === 'user' ? 'right' : 'left',
@@ -518,7 +518,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   autoFocus
                   style={{
                     flex: 1, background: 'none', border: 'none', outline: 'none',
-                    color: 'rgba(220,200,178,0.7)', fontSize: '13px',
+                    color: 'rgba(220,200,178,0.85)', fontSize: '15px',
                     fontStyle: 'italic', letterSpacing: '0.03em',
                     caretColor: 'rgba(220,190,150,0.5)',
                   }}
@@ -542,7 +542,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 onClick={() => setChatMode(false)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(160,140,120,0.3)', fontSize: '10px',
+                  color: 'rgba(160,140,120,0.5)', fontSize: '12px',
                   letterSpacing: '0.1em', cursor: 'pointer',
                   marginTop: '14px', fontStyle: 'italic',
                 }}
@@ -559,7 +559,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
       {/* status dot */}
       <div className={`status-dot${agentStatus !== 'idle' ? ` ${agentStatus}` : ''}`}>
         <div className="dot-live" />
-        <span>aya · nosana</span>
+        <span>aya here · </span>
       </div>
 
       {/* user info — top left */}

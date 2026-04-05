@@ -3,12 +3,41 @@
 import { signIn } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 
+type Lang = 'id' | 'en'
+
+const CONTENT = {
+  en: {
+    eyebrow: 'oneQ',
+    title1: 'are you',
+    title2: 'happy?',
+    subtitle: 'one question. one feeling. every day.',
+    btn: 'continue with google',
+    btnLoading: 'signing in...',
+    footer: 'built on nosana · powered by elizaos',
+    switchTo: 'id',
+  },
+  id: {
+    eyebrow: 'oneQ',
+    title1: 'apakah kamu',
+    title2: 'bahagia?',
+    subtitle: 'satu pertanyaan. satu perasaan. setiap hari.',
+    btn: 'masuk dengan google',
+    btnLoading: 'masuk...',
+    footer: 'dibangun di nosana · didukung elizaos',
+    switchTo: 'en',
+  },
+}
+
 export default function Landing() {
   const [visible, setVisible] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [lang, setLang] = useState<Lang>('en')
 
   useEffect(() => {
     const t = setTimeout(() => setVisible(true), 100)
+    // detect browser language
+    const l = navigator.language || ''
+    if (l.startsWith('id')) setLang('id')
     return () => clearTimeout(t)
   }, [])
 
@@ -16,6 +45,8 @@ export default function Landing() {
     setLoading(true)
     await signIn('google', { callbackUrl: '/app' })
   }
+
+  const c = CONTENT[lang]
 
   return (
     <>
@@ -59,7 +90,7 @@ export default function Landing() {
           inset: 0;
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
           pointer-events: none;
-          opacity: 0.2; /* reduced — was making text look grainy */
+          opacity: 0.2;
         }
 
         .content {
@@ -72,9 +103,9 @@ export default function Landing() {
 
         .eyebrow {
           font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 11px;
+          font-size: 13px;
           letter-spacing: 0.22em;
-          color: rgba(180, 140, 90, 0.45);
+          color: rgba(180, 140, 90, 0.65);
           text-transform: uppercase;
           margin-bottom: 32px;
           opacity: 0;
@@ -102,7 +133,7 @@ export default function Landing() {
           font-family: 'Cormorant Garamond', Georgia, serif;
           font-size: 16px;
           font-style: italic;
-          color: rgba(180, 155, 120, 0.5);
+          color: rgba(180, 155, 120, 0.68);
           margin-bottom: 56px;
           opacity: 0;
           transition: opacity 1.2s ease 0.5s;
@@ -128,14 +159,12 @@ export default function Landing() {
           font-size: 14px;
           letter-spacing: 0.08em;
           cursor: pointer;
-          /* single transition declaration — no duplicate */
           opacity: 0;
           transition: opacity 1.2s ease 0.8s, background 0.3s, border-color 0.3s, color 0.3s;
         }
 
         .signin-btn.visible {
           opacity: 1;
-          /* border breathes gently once revealed */
           animation: borderPulse 4s 2.2s ease-in-out infinite;
         }
 
@@ -157,37 +186,67 @@ export default function Landing() {
           left: 50%;
           transform: translateX(-50%);
           font-family: 'Cormorant Garamond', Georgia, serif;
-          font-size: 11px;
+          font-size: 12px;
           letter-spacing: 0.14em;
-          color: rgba(150, 120, 90, 0.3);
+          color: rgba(150, 120, 90, 0.5);
           white-space: nowrap;
           opacity: 0;
           transition: opacity 1.2s ease 1.2s;
         }
 
         .footer.visible { opacity: 1; }
+
+        .lang-toggle {
+          position: fixed;
+          top: 18px;
+          right: 20px;
+          z-index: 50;
+          background: none;
+          border: 1px solid rgba(200,170,130,0.15);
+          border-radius: 4px;
+          cursor: pointer;
+          font-family: 'Cormorant Garamond', Georgia, serif;
+          font-size: 0.72rem;
+          letter-spacing: 0.22em;
+          text-transform: uppercase;
+          color: rgba(180,155,120,0.55);
+          padding: 5px 10px;
+          transition: color 0.3s ease, border-color 0.3s ease;
+          opacity: 0;
+          transition: opacity 1.2s ease 1.5s, color 0.3s ease, border-color 0.3s ease;
+        }
+        .lang-toggle.visible { opacity: 1; }
+        .lang-toggle:hover { color: rgba(220,190,155,0.9); border-color: rgba(200,170,130,0.35); }
       `}</style>
+
+      {/* lang switcher — top right */}
+      <button
+        className={`lang-toggle${visible ? ' visible' : ''}`}
+        onClick={() => setLang(l => l === 'en' ? 'id' : 'en')}
+      >
+        {c.switchTo}
+      </button>
 
       <div className="landing">
         <div className="content">
-          <p className={`eyebrow${visible ? ' visible' : ''}`}>oneQ</p>
+          <p className={`eyebrow${visible ? ' visible' : ''}`}>{c.eyebrow}</p>
           <h1 className={`title${visible ? ' visible' : ''}`}>
-            are you<br />happy?
+            {c.title1}<br />{c.title2}
           </h1>
           <p className={`subtitle${visible ? ' visible' : ''}`}>
-            one question. one feeling. every day.
+            {c.subtitle}
           </p>
           <button
             className={`signin-btn${visible ? ' visible' : ''}`}
             onClick={handleSignIn}
             disabled={loading}
           >
-            {loading ? 'signing in...' : 'continue with google'}
+            {loading ? c.btnLoading : c.btn}
           </button>
         </div>
 
         <p className={`footer${visible ? ' visible' : ''}`}>
-          built on nosana · powered by elizaos
+          {c.footer}
         </p>
       </div>
     </>

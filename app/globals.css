@@ -139,11 +139,11 @@ body::before {
 
 .split-label {
   font-family: inherit;
-  font-size: clamp(0.62rem, 1.3vw, 0.78rem);
+  font-size: clamp(0.85rem, 1.8vw, 1.1rem);
   letter-spacing: 0.4em;
   text-transform: uppercase;
   color: var(--sub);
-  opacity: 0.4;
+  opacity: 0.6;
   transition: opacity 0.5s ease, color 0.5s ease, letter-spacing 0.5s ease;
   position: relative;
   z-index: 1;
@@ -207,7 +207,7 @@ body::before {
 }
 
 .question {
-  font-size: clamp(1.8rem, 6.5vw, 3.8rem);
+  font-size: clamp(2.2rem, 7vw, 4.8rem);
   font-weight: 300;
   letter-spacing: 0.02em;
   color: #d0c8c0;
@@ -231,11 +231,11 @@ body::before {
 
 /* ── RETRY ── */
 .retry-hint {
-  font-size: 0.58rem;
+  font-size: 0.72rem;
   letter-spacing: 0.2em;
-  color: rgba(55,50,45,0.8);
+  color: rgba(120,110,100,0.7);
   text-align: center;
-  margin-top: 10px;
+  margin-top: 14px;
   cursor: pointer;
   transition: color 0.3s ease;
   text-transform: uppercase;
@@ -245,13 +245,13 @@ body::before {
 
 /* ── SUB QUESTION ── */
 .sub-question {
-  font-size: clamp(0.62rem, 1.4vw, 0.78rem);
-  color: rgba(75,68,62,0.9);
+  font-size: clamp(0.75rem, 1.6vw, 0.92rem);
+  color: rgba(140,125,110,0.75);
   letter-spacing: 0.2em;
   text-align: center;
   animation: fadeUp 1.2s 0.2s ease both;
   font-style: italic;
-  margin-top: 4px;
+  margin-top: 8px;
 }
 
 /* ── RESULT — stripped down ── */
@@ -291,11 +291,11 @@ body::before {
 
 /* result body — the star of the show */
 .result-body {
-  font-size: clamp(1.05rem, 2.2vw, 1.4rem);
+  font-size: clamp(1.25rem, 3vw, 1.75rem);
   font-weight: 300;
   font-style: italic;
-  max-width: min(480px, 88vw);
-  line-height: 2.2;
+  max-width: min(540px, 88vw);
+  line-height: 2.4;
   margin-bottom: clamp(32px, 6vh, 56px);
   min-height: 80px;
   display: flex;
@@ -311,8 +311,8 @@ body::before {
 
 .back-btn {
   font-family: inherit;
-  font-size: 0.68rem;
-  letter-spacing: 0.28em;
+  font-size: 0.82rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
   color: var(--sub);
   background: none;
@@ -364,7 +364,7 @@ body::before {
   display: flex;
   align-items: center;
   gap: 7px;
-  font-size: 0.56rem;
+  font-size: 0.68rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   color: transparent;
@@ -395,61 +395,62 @@ body::before {
   opacity: 0;
 }
 .user-name {
-  font-size: 12px;
+  font-size: 14px;
   font-style: italic;
-  color: rgba(200,178,148,0.72);
+  color: rgba(200,178,148,0.85);
   letter-spacing: 0.04em;
 }
 .info-sep {
-  color: rgba(180,150,120,0.2);
-  font-size: 10px;
+  color: rgba(180,150,120,0.4);
+  font-size: 12px;
 }
 .ghost-btn {
   background: none;
   border: none;
   cursor: pointer;
   font-family: inherit;
-  font-size: 11px;
+  font-size: 13px;
   letter-spacing: 0.08em;
-  color: rgba(150,125,100,0.42);
+  color: rgba(150,125,100,0.6);
   padding: 0;
   transition: color 0.2s ease;
 }
-.ghost-btn:hover { color: rgba(200,175,145,0.85); }
+.ghost-btn:hover { color: rgba(200,175,145,0.95); }
 
 /* ── STREAK — only at 7+ days ── */
 .streak-display {
   position: fixed;
-  top: 18px;
+  top: 52px;
   right: 20px;
   z-index: 50;
-  font-size: 10px;
+  font-size: 12px;
   letter-spacing: 0.18em;
-  color: rgba(180,150,120,0.5);
+  color: rgba(180,150,120,0.6);
   font-style: italic;
   animation: streakReveal 1.5s ease both;
 }
 
-/* ── LANG SWITCH — whisper ── */
+/* ── LANG SWITCH — top right ── */
 .lang-switch {
   position: fixed;
-  bottom: 18px;
-  left: 20px;
+  top: 18px;
+  right: 20px;
   z-index: 50;
   background: none;
-  border: none;
+  border: 1px solid rgba(200,170,130,0.15);
+  border-radius: 4px;
   cursor: pointer;
   font-family: inherit;
-  font-size: 0.54rem;
-  letter-spacing: 0.28em;
+  font-size: 0.72rem;
+  letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: rgba(55,50,45,0.7);
-  padding: 0;
-  transition: color 0.3s ease;
+  color: rgba(180,155,120,0.55);
+  padding: 5px 10px;
+  transition: color 0.3s ease, border-color 0.3s ease;
   opacity: 0;
-  animation: fadeIn 1s 3s ease both;
+  animation: fadeIn 1s 1.5s ease both;
 }
-.lang-switch:hover { color: var(--sub); }
+.lang-switch:hover { color: rgba(220,190,155,0.9); border-color: rgba(200,170,130,0.35); }
 
 /* ── NOSANA BADGE ── */
 .nosana-badge {
@@ -463,13 +464,13 @@ body::before {
   opacity: 0;
   animation: fadeIn 1s 3s ease both;
   text-decoration: none;
-  color: rgba(42,39,33,0.8);
+  color: rgba(120,105,85,0.6);
   transition: color 0.3s ease;
 }
-.nosana-badge:hover { color: #4a4540; }
-.nosana-badge svg   { width: 12px; height: 12px; opacity: 0.4; }
+.nosana-badge:hover { color: rgba(180,155,120,0.9); }
+.nosana-badge svg   { width: 12px; height: 12px; opacity: 0.6; }
 .nosana-badge span  {
-  font-size: 0.5rem;
+  font-size: 0.75rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
