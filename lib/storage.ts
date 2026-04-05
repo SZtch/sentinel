@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { readFileSync, writeFileSync, renameSync, existsSync, mkdirSync } from "fs";
 import { join } from "path";
 
 export type Session = {
@@ -44,7 +44,10 @@ function load(userId: string): StorageData {
 
 function save(userId: string, data: StorageData) {
   ensureDir();
-  writeFileSync(userFile(userId), JSON.stringify(data, null, 2), "utf-8");
+  const file = userFile(userId);
+  const tmp = file + ".tmp";
+  writeFileSync(tmp, JSON.stringify(data, null, 2), "utf-8");
+  renameSync(tmp, file);
 }
 
 export function addSession(session: Session, userId: string) {

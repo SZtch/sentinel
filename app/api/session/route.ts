@@ -4,28 +4,61 @@ import { authOptions } from "@/lib/auth";
 import {
   addSession,
   getSessions,
+  addJournalEntry,
+  getCurrentWeek,
   type Session,
 } from "../../../lib/storage";
 
-const AGENT_URL = process.env.ELIZA_API_URL || "http://localhost:3001";
-const AGENT_ID = process.env.ELIZA_AGENT_ID || "aya";
+const OPENAI_API_URL = process.env.OPENAI_API_URL;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY || "nosana";
+const MODEL_NAME = process.env.MODEL_NAME || "Qwen/Qwen3.5-27B-AWQ-4bit";
 
-// Trigger journal generation via ElizaOS WRITE_JOURNAL action.
-// Fire-and-forget — runs in background after session save.
-async function triggerJournal(userId: string, sessionCount: number) {
-  if (sessionCount < 2) return;
+// Generate journal content by calling the LLM directly — no ElizaOS dependency.
+// Fire-and-forget: runs in background after session save.
+async function generateAndSaveJournal(userId: string) {
+  if (!OPENAI_API_URL) return;
+
+  const sessions = getSessions(7, userId);
+  if (sessions.length < 2) return;
+
+  const week = getCurrentWeek();
+  const summary = sessions
+    .map((s) => `${s.date}: "${s.question}" → ${s.answer}`)
+    .join("\n");
+
+  const prompt = `Based on this week's emotional check-ins, write a quiet poetic reflection in 3-4 lines.\nStyle: lowercase, warm, honest, no advice — just witness what the week held.\nDo not use quotes, lists, or greetings. Return only the reflection itself.\n\nSessions:\n${summary}`;
+
   try {
-    await fetch(`${AGENT_URL}/${AGENT_ID}/message`, {
+    const res = await fetch(`${OPENAI_API_URL}/chat/completions`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${OPENAI_API_KEY}`,
+      },
       body: JSON.stringify({
-        text: "[MODE:JOURNAL] Generate a weekly reflection based on recent sessions.",
-        userName: "system",
-        userId,
-        roomId: `journal-${userId}`,
+        model: MODEL_NAME,
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.85,
+        max_tokens: 150,
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(25000),
     });
+
+    if (!res.ok) return;
+    const data = await res.json();
+    const content = data?.choices?.[0]?.message?.content?.trim();
+
+    if (content) {
+      addJournalEntry(
+        {
+          week,
+          content,
+          generatedAt: Date.now(),
+          sessionCount: sessions.length,
+        },
+        userId
+      );
+    }
   } catch {
     // silently fail — journal is non-critical
   }
@@ -58,9 +91,8 @@ export async function POST(req: NextRequest) {
 
     addSession(userSession, userId);
 
-    // Fire-and-forget: route journal generation through ElizaOS WRITE_JOURNAL action
-    const sessions = getSessions(7, userId);
-    triggerJournal(userId, sessions.length).catch(() => {});
+    // Fire-and-forget: generate journal directly via LLM
+    generateAndSaveJournal(userId).catch(() => {});
 
     return Response.json({ ok: true });
   } catch {

@@ -24,6 +24,22 @@ export const emotionalMemoryProvider = {
     const daysSince = getDaysSinceLastSession(sessions);
     const recent = sessions.slice(-7);
 
+    // Detect active language from the mode prefix in the current message.
+    // [MODE:PERTANYAAN], [MODE:RESPONS], [MODE:CURHAT] → Indonesian
+    // [MODE:QUESTION], [MODE:RESPONSE], [MODE:CHAT] → English
+    // Falls back to last session's lang if no prefix found.
+    const messageText = (_message as { content?: { text?: string } })?.content?.text ?? "";
+    const idPrefixes = ["[MODE:PERTANYAAN]", "[MODE:RESPONS]", "[MODE:CURHAT]"];
+    const activeLang = idPrefixes.some(p => messageText.toUpperCase().includes(p.toUpperCase()))
+      ? "id"
+      : messageText.includes("[MODE:")
+        ? "en"
+        : (sessions[sessions.length - 1]?.lang ?? "en");
+
+    const langNote = activeLang === "id"
+      ? "LANGUAGE: User is currently in Indonesian mode. All your responses MUST be in Bahasa Indonesia."
+      : "LANGUAGE: User is currently in English mode. All your responses MUST be in English.";
+
     const historyLines = recent
       .map((s) => `- ${s.date} [${s.lang}]: "${s.question}" → ${s.answer}`)
       .join("\n");
@@ -51,6 +67,8 @@ export const emotionalMemoryProvider = {
 ${historyLines}
 
 ${trendNote}${absenceNote}${streakNote}
+
+${langNote}
 
 Use this context to shape your tone and questions. Do not reference "trend", "history", or "data" explicitly to the user. Just let it inform how you show up.`;
 

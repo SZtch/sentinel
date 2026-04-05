@@ -576,10 +576,12 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
         </div>
       )}
 
-      {/* lang switcher — whisper text, bottom left */}
-      <button className="lang-switch" onClick={switchLang}>
-        {s.switchTo}
-      </button>
+      {/* lang switcher — whisper text, bottom left, hidden during result */}
+      {!showResult && (
+        <button className="lang-switch" onClick={switchLang}>
+          {s.switchTo}
+        </button>
+      )}
 
       {/* nosana badge */}
       <a className="nosana-badge" href="https://nosana.com" target="_blank" rel="noopener noreferrer">

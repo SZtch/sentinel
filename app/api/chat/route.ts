@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { createHash } from 'crypto'
 
 const AGENT_URL = process.env.ELIZA_API_URL || 'http://localhost:3001'
-const AGENT_ID  = process.env.ELIZA_AGENT_ID  || ''
+const AGENT_ID  = process.env.ELIZA_AGENT_ID  || '30c8adf3-1590-0456-aed5-9c78c439c205'
 
 // In-memory session cache per userId
 const sessionCache = new Map<string, { sessionId: string; expiresAt: number }>()

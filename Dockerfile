@@ -43,4 +43,4 @@ ENV ELIZA_API_URL=http://localhost:3001
 ENV ELIZA_AGENT_ID=aya
 
 # ── Start both processes ──
-CMD ["sh", "-c", "SERVER_PORT=3001 bun run start:agent & until curl -sf http://localhost:3001/health > /dev/null 2>&1; do sleep 2; done && bun run start"]
+CMD ["sh", "-c", "SERVER_PORT=3001 bun run start:agent & until curl -sf http://localhost:3001/api/server/health > /dev/null 2>&1; do sleep 2; done && bun run start"]
