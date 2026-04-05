@@ -153,6 +153,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
   const [chatInput, setChatInput] = useState('')
   const [chatLoading, setChatLoading] = useState(false)
   const [showChatPrompt, setShowChatPrompt] = useState(false)
+  const [showHint, setShowHint] = useState(false)
   const chatEndRef = useRef<HTMLDivElement>(null)
 
   const currentQuestion = useRef('')
@@ -223,6 +224,9 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     } finally {
       setQuestionLoading(false)
       setButtonsDisabled(false)
+      // show tap hint for first-timers; hides itself after 4s
+      const hintTimer = setTimeout(() => setShowHint(true), 600)
+      return () => clearTimeout(hintTimer)
     }
   }, [callAgent])
 
@@ -257,6 +261,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
 
   const handleAnswer = useCallback(async (type: Answer) => {
     if (buttonsDisabled) return
+    setShowHint(false)
     stopParticles()
     setHoverSide(null)
     setAnswerType(type)
@@ -401,6 +406,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
               <h1 className={`question${hoverSide === 'yes' ? ' warm' : hoverSide === 'no' ? ' cool' : ''}`}>
                 {question}
               </h1>
+              <p className="sub-question">{s.sub}</p>
               <div
                 className="retry-hint"
                 style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', gap: '8px' }}
@@ -412,7 +418,22 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             </>
           )}
         </div>
-        <p className="sub-question">{s.sub}</p>
+        {/* first-time affordance — fades in then auto-fades after 4s */}
+        {showHint && (
+          <p style={{
+            marginTop: '32px',
+            fontFamily: "'Cormorant Garamond', Georgia, serif",
+            fontSize: '11px',
+            letterSpacing: '0.26em',
+            textTransform: 'uppercase',
+            color: 'rgba(152,134,112,0.52)',
+            fontStyle: 'italic',
+            animation: 'fadeIn 0.8s ease both, fadeOut 0.8s 3.5s ease forwards',
+            pointerEvents: 'none',
+          }}>
+            tap to answer
+          </p>
+        )}
       </div>
 
       {/* result overlay — stripped down */}
@@ -460,7 +481,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 onClick={() => setChatMode(true)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(200,170,140,0.5)', fontSize: '14px',
+                  color: 'rgba(200,170,140,0.72)', fontSize: '14px',
                   fontStyle: 'italic', letterSpacing: '0.08em',
                   cursor: 'pointer', padding: '0',
                   borderBottom: '1px solid rgba(200,170,140,0.18)',
@@ -524,9 +545,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
 
               <div style={{
                 display: 'flex', alignItems: 'center', gap: '12px',
-                borderBottom: '1px solid rgba(200,170,140,0.14)',
-                paddingBottom: '10px',
-                /* FIX: respect virtual keyboard on mobile */
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(200,170,140,0.10)',
+                borderRadius: '6px',
+                padding: '10px 12px',
                 paddingBottom: 'max(10px, env(safe-area-inset-bottom, 10px))',
               }}>
                 <input
@@ -564,7 +586,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 onClick={() => setChatMode(false)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(150,133,115,0.4)', fontSize: '12px',
+                  color: 'rgba(150,133,115,0.65)', fontSize: '12px',
                   letterSpacing: '0.1em', cursor: 'pointer',
                   marginTop: '16px', fontStyle: 'italic', padding: '0',
                 }}
@@ -587,7 +609,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 position: 'fixed', bottom: '22px', right: '24px',
                 background: 'none', border: 'none',
                 /* FIX: raised opacity + underline hint so users know it's tappable */
-                color: 'rgba(178,152,118,0.55)', fontSize: '11px',
+                color: 'rgba(178,152,118,0.75)', fontSize: '11px',
                 letterSpacing: '0.2em', textTransform: 'uppercase',
                 fontStyle: 'italic', cursor: 'pointer',
                 opacity: 0, animation: 'fadeIn 0.8s 1s ease both',
@@ -660,7 +682,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
       </div>
 
       {/* streak — only after 7 days */}
-      {journalData.streak >= 7 && (
+      {journalData.streak >= 2 && (
         <div className="streak-display">
           {journalData.streak} {s.streak}
         </div>

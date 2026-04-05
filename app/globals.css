@@ -52,6 +52,10 @@ body::before {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
+@keyframes fadeOut {
+  from { opacity: 1; }
+  to   { opacity: 0; }
+}
 @keyframes livePulse {
   0%, 100% { opacity: 0.4; transform: scale(0.9); }
   50%       { opacity: 1;   transform: scale(1.15); }
@@ -111,8 +115,8 @@ body::before {
   -webkit-tap-highlight-color: transparent;
 }
 
-.yes-half { align-items: center; }
-.no-half  { align-items: center; }
+.yes-half { justify-content: center; align-items: flex-end; padding-bottom: 18vh; }
+.no-half  { justify-content: center; align-items: flex-end; padding-bottom: 18vh; }
 
 .split-half::before {
   content: ''; position: absolute; inset: 0;
@@ -144,39 +148,96 @@ body::before {
   padding-bottom: 6px;
   border-bottom: 1px solid rgba(112, 100, 88, 0.22);
 }
-/* YA kiri: garis di kanan — nunjuk ke divider */
+/* YES kiri: garis bawah */
 .yes-half .split-label {
-  padding-right: 10px;
-  padding-left: 0;
-  border-right: 1px solid rgba(112, 100, 88, 0.22);
-  border-bottom: none;
-}
-/* TIDAK kanan: garis di kiri — nunjuk ke divider */
-.no-half .split-label {
-  padding-left: 10px;
   padding-right: 0;
-  border-left: 1px solid rgba(112, 100, 88, 0.22);
-  border-bottom: none;
+  padding-left: 0;
+  padding-bottom: 6px;
+  border-right: none;
+  border-bottom: 1px solid rgba(112, 100, 88, 0.22);
+}
+/* TIDAK kanan: garis bawah */
+.no-half .split-label {
+  padding-left: 0;
+  padding-right: 0;
+  padding-bottom: 6px;
+  border-left: none;
+  border-bottom: 1px solid rgba(112, 100, 88, 0.22);
 }
 /* Hover */
 .yes-half.active .split-label {
   color: var(--yes);
   letter-spacing: 0.58em;
-  border-right-color: rgba(232, 160, 74, 0.45);
+  border-right-color: transparent;
+  border-bottom-color: rgba(232, 160, 74, 0.45);
 }
 .no-half.active .split-label {
   color: var(--no);
   letter-spacing: 0.58em;
-  border-left-color: rgba(91, 122, 138, 0.45);
+  border-left-color: transparent;
+  border-bottom-color: rgba(91, 122, 138, 0.45);
 }
 
 .split-divider {
-  position: absolute; left: 50%; top: 12vh; bottom: 12vh;
+  position: absolute; left: 50%; top: 6vh; bottom: 6vh;
   width: 1px;
   height: auto;
-  background: linear-gradient(to bottom, transparent, rgba(55,50,45,0.25) 25%, rgba(55,50,45,0.25) 75%, transparent);
+  background: linear-gradient(to bottom, transparent, rgba(55,50,45,0.35) 20%, rgba(55,50,45,0.35) 80%, transparent);
   z-index: 12; pointer-events: none;
   transform: translateX(-50%);
+}
+
+/* ── MOBILE: vertical split (yes top / no bottom) ── */
+@media (max-width: 640px) {
+  .split-screen {
+    flex-direction: column;
+  }
+
+  .split-divider {
+    left: 12vw; right: 12vw; top: 50%; bottom: auto;
+    width: auto; height: 1px;
+    background: linear-gradient(to right, transparent, rgba(55,50,45,0.25) 25%, rgba(55,50,45,0.25) 75%, transparent);
+    transform: translateY(-50%);
+  }
+
+  .yes-half::before {
+    background: radial-gradient(ellipse 80% 60% at 50% 20%, rgba(180,95,15,0.13) 0%, transparent 65%);
+  }
+  .no-half::before {
+    background: radial-gradient(ellipse 80% 60% at 50% 80%, rgba(35,65,95,0.16) 0%, transparent 65%);
+  }
+
+  .yes-half { justify-content: center; align-items: flex-end; padding-bottom: 12vh; }
+  .no-half  { justify-content: center; align-items: flex-end; padding-bottom: 12vh; }
+
+  /* Labels: border bawah untuk keduanya */
+  .yes-half .split-label {
+    padding-right: 0;
+    padding-left: 0;
+    padding-bottom: 6px;
+    border-right: none;
+    border-bottom: 1px solid rgba(112, 100, 88, 0.22);
+  }
+  .no-half .split-label {
+    padding-left: 0;
+    padding-right: 0;
+    padding-bottom: 6px;
+    border-left: none;
+    border-bottom: 1px solid rgba(112, 100, 88, 0.22);
+  }
+  .yes-half.active .split-label {
+    border-right: none;
+    border-bottom-color: rgba(232, 160, 74, 0.45);
+  }
+  .no-half.active .split-label {
+    border-left: none;
+    border-bottom-color: rgba(91, 122, 138, 0.45);
+  }
+
+  /* Question float: kurangi padding vertikal di mobile */
+  .question-float {
+    padding-bottom: min(10vh, 60px);
+  }
 }
 
 /* ── QUESTION FLOAT ── */
@@ -184,7 +245,7 @@ body::before {
   position: fixed; inset: 0; z-index: 15;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
-  padding-bottom: min(20vh, 110px);
+  padding-bottom: min(8vh, 48px);
   padding-left: clamp(20px, 6vw, 60px);
   padding-right: clamp(20px, 6vw, 60px);
   pointer-events: none;
@@ -225,22 +286,22 @@ body::before {
 
 /* ── RETRY ── */
 .retry-hint {
-  font-size: 0.72rem; letter-spacing: 0.2em;
-  color: rgba(138, 124, 110, 0.88); /* FIX: raised from 0.7 */
-  text-align: center; margin-top: 14px;
+  font-size: 0.62rem; letter-spacing: 0.16em;
+  color: rgba(112, 100, 88, 0.6);
+  text-align: center; margin-top: 18px;
   cursor: pointer; transition: color 0.3s ease;
   text-transform: uppercase; pointer-events: all;
 }
-.retry-hint:hover { color: rgba(175,158,138,0.98); }
+.retry-hint:hover { color: rgba(155,138,118,0.85); }
 .retry-hint:focus-visible { outline: 1px solid rgba(200,170,120,0.35); outline-offset: 6px; }
 
 /* ── SUB QUESTION ── */
 .sub-question {
-  font-size: clamp(0.75rem, 1.6vw, 0.92rem);
-  color: rgba(168, 150, 132, 0.9); /* FIX: raised from 0.75 */
+  font-size: clamp(0.75rem, 1.6vw, 0.88rem);
+  color: rgba(168, 150, 132, 0.82);
   letter-spacing: 0.2em; text-align: center;
   animation: fadeUp 1.2s 0.2s ease both;
-  font-style: italic; margin-top: 8px;
+  font-style: italic; margin-top: 10px; margin-bottom: 0;
 }
 
 /* ── RESULT ── */
@@ -325,8 +386,8 @@ body::before {
   font-size: 0.68rem; letter-spacing: 0.24em; text-transform: uppercase;
   color: transparent; pointer-events: none; transition: color 0.5s ease;
 }
-.status-dot.connected { color: #38342f; }
-.status-dot.error     { color: #3a2020; }
+.status-dot.connected { color: rgba(130, 115, 98, 0.72); }
+.status-dot.error     { color: rgba(160, 90, 80, 0.72); }
 .dot-live {
   width: 4px; height: 4px; border-radius: 50%; background: #2e7d5a;
   flex-shrink: 0; animation: livePulse 2.5s ease-in-out infinite;
@@ -349,7 +410,7 @@ body::before {
 }
 /* Separator · */
 .info-sep {
-  color: rgba(160, 135, 105, 0.38);
+  color: rgba(160, 135, 105, 0.62);
   font-size: 13px;
   font-style: normal;
 }
@@ -360,7 +421,7 @@ body::before {
   font-size: 10px;
   letter-spacing: 0.2em;
   text-transform: uppercase;
-  color: rgba(148, 125, 100, 0.58);
+  color: rgba(148, 125, 100, 0.75);
   padding: 0;
   transition: color 0.25s ease;
   position: relative;
