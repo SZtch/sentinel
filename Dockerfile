@@ -39,6 +39,6 @@ ENV ELIZA_API_URL=http://localhost:3001
 ENV ELIZA_AGENT_ID=aya
 
 # ── Start both processes ──
-# ElizaOS starts first; `sleep 8` gives it time to initialize before Next.js
-# begins accepting requests that proxy to it.
-CMD ["sh", "-c", "SERVER_PORT=3001 npm run start:agent & sleep 8 && npm run start"]
+# ElizaOS starts first; health-check loop polls /health every 2s
+# so Next.js only starts after the agent is truly ready.
+CMD ["sh", "-c", "SERVER_PORT=3001 npm run start:agent & until curl -sf http://localhost:3001/health > /dev/null 2>&1; do sleep 2; done && npm run start"]

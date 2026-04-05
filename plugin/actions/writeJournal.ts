@@ -11,12 +11,7 @@ const MODEL_NAME = process.env.MODEL_NAME || "Qwen/Qwen3.5-27B-AWQ-4bit";
 async function generateJournalContent(sessionSummary: string): Promise<string | null> {
   if (!OPENAI_API_URL) return null;
 
-  const prompt = `Based on this week's emotional check-ins, write a quiet poetic reflection in 3-4 lines.
-Style: lowercase, warm, honest, no advice — just witness what the week held.
-Do not use quotes, lists, or greetings. Return only the reflection itself.
-
-Sessions:
-${sessionSummary}`;
+  const prompt = `Based on this week's emotional check-ins, write a quiet poetic reflection in 3-4 lines.\nStyle: lowercase, warm, honest, no advice — just witness what the week held.\nDo not use quotes, lists, or greetings. Return only the reflection itself.\n\nSessions:\n${sessionSummary}`;
 
   try {
     const res = await fetch(`${OPENAI_API_URL}/chat/completions`, {
@@ -58,7 +53,11 @@ export const writeJournalAction = {
     _options: unknown,
     callback?: Function
   ): Promise<boolean> => {
-    const sessions = getSessions(7);
+    // Extract userId injected by Next.js /api/chat route
+    const message = _message as { userId?: string };
+    const userId = message?.userId || "default";
+
+    const sessions = getSessions(7, userId);
 
     if (sessions.length < 2) {
       if (callback) await callback({ text: "" });
@@ -73,12 +72,15 @@ export const writeJournalAction = {
     const content = await generateJournalContent(summary);
 
     if (content) {
-      addJournalEntry({
-        week,
-        content,
-        generatedAt: Date.now(),
-        sessionCount: sessions.length,
-      });
+      addJournalEntry(
+        {
+          week,
+          content,
+          generatedAt: Date.now(),
+          sessionCount: sessions.length,
+        },
+        userId
+      );
     }
 
     if (callback) await callback({ text: "" });
