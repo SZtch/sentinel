@@ -13,16 +13,14 @@ export async function GET() {
     const sessions = getSessions(30, userId);
     const streak = getStreak(sessions);
     const journal = getLatestJournal(userId);
-    const totalSessions = sessions.length;
 
     return Response.json({
       streak,
-      totalSessions,
       journal: journal
         ? { week: journal.week, content: journal.content, sessionCount: journal.sessionCount }
         : null,
     });
   } catch {
-    return Response.json({ streak: 0, totalSessions: 0, journal: null });
+    return Response.json({ streak: 0, journal: null });
   }
 }
