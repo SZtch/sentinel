@@ -474,3 +474,39 @@ body::before {
   letter-spacing: 0.24em;
   text-transform: uppercase;
 }
+
+/* ── JOURNAL PANEL ── */
+.journal-panel {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(6,5,4,0.7);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.3s ease both;
+}
+
+.journal-panel-inner {
+  width: 100%;
+  max-width: min(520px, 92vw);
+  padding: clamp(32px, 6vw, 56px) clamp(28px, 5vw, 48px) clamp(40px, 8vh, 64px);
+  background: linear-gradient(to top, #0a0807 0%, rgba(10,8,7,0.96) 100%);
+  border-top: 1px solid rgba(255,255,255,0.04);
+  animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.journal-panel-label {
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: rgba(170,145,110,0.45);
+  margin-bottom: 20px;
+  font-style: normal;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(40px); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}

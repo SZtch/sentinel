@@ -3,6 +3,39 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useSession, signOut } from 'next-auth/react'
 
+// ── Custom SVG Icons ─────────────────────────────────────────
+function IconBack() {
+  return (
+    <svg width="18" height="8" viewBox="0 0 18 8" fill="none" stroke="currentColor" strokeWidth="0.7" strokeLinecap="round">
+      <line x1="17" y1="4" x2="1" y2="4" />
+      <line x1="1" y1="4" x2="4" y2="1.5" />
+      <line x1="1" y1="4" x2="4" y2="6.5" />
+    </svg>
+  )
+}
+
+function IconRetry() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="0.75" strokeLinecap="round">
+      <path d="M7 1.5 A5.5 5.5 0 1 0 12.5 7" />
+      <line x1="12.5" y1="7" x2="12.5" y2="3" />
+      <line x1="12.5" y1="3" x2="9" y2="3" />
+    </svg>
+  )
+}
+
+function IconSend({ active }: { active: boolean }) {
+  return (
+    <svg width="18" height="14" viewBox="0 0 18 14" fill="none"
+      stroke={active ? 'rgba(210,175,130,0.7)' : 'rgba(255,255,255,0.1)'}
+      strokeWidth="0.75" strokeLinecap="round">
+      <line x1="1" y1="7" x2="17" y2="7" />
+      <line x1="17" y1="7" x2="12" y2="2.5" />
+      <line x1="17" y1="7" x2="12" y2="11.5" />
+    </svg>
+  )
+}
+
 type Lang = 'id' | 'en'
 type Answer = 'yes' | 'no'
 
@@ -10,27 +43,27 @@ const STATIC = {
   id: {
     yes: 'ya', no: 'tidak',
     sub: 'jawab dengan jujur',
-    back: '← kembali',
-    retry: '↺ pertanyaan lain',
+    back: 'kembali',
+    retry: 'pertanyaan lain',
     streak: 'hari',
     thisWeek: 'minggu ini',
     switchTo: 'en',
     chatPrompt: 'ingin cerita lebih?',
     chatPlaceholder: 'cerita saja...',
-    chatSend: '↑',
+    chatSend: 'kirim',
     chatClose: 'cukup untuk hari ini',
   },
   en: {
     yes: 'yes', no: 'no',
     sub: 'answer honestly',
     back: 'go back',
-    retry: '↺ new question',
+    retry: 'new question',
     streak: 'days',
     thisWeek: 'this week',
     switchTo: 'id',
     chatPrompt: 'want to talk about it?',
     chatPlaceholder: 'just talk...',
-    chatSend: '↑',
+    chatSend: 'send',
     chatClose: "that's enough for today",
   },
 }
@@ -108,6 +141,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
   const [agentStatus, setAgentStatus] = useState<'idle' | 'connected' | 'error'>('idle')
   const [journalData, setJournalData] = useState<JournalData>({ streak: 0, journal: null })
   const [showJournal, setShowJournal] = useState(false)
+  const [showJournalPanel, setShowJournalPanel] = useState(false)
   const [chatMode, setChatMode] = useState(false)
   const [chatMessages, setChatMessages] = useState<{ role: 'user' | 'aya'; text: string }[]>([])
   const [chatInput, setChatInput] = useState('')
@@ -258,6 +292,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
   const goBack = useCallback(() => {
     setResultActive(false)
     setShowJournal(false)
+    setShowJournalPanel(false)
     setChatMode(false)
     setChatMessages([])
     setChatInput('')
@@ -354,10 +389,11 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
               </h1>
               <div
                 className="retry-hint"
-                style={{ pointerEvents: 'all' }}
+                style={{ pointerEvents: 'all', display: 'flex', alignItems: 'center', gap: '8px' }}
                 onClick={() => generateQuestion()}
               >
-                {s.retry}
+                <IconRetry />
+                <span>{s.retry}</span>
               </div>
             </>
           )}
@@ -377,11 +413,20 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             <div className="static-line" />
           )}
 
-          <div className="result-body">
+          {/* result lines — collapse to first line when chat is active */}
+          <div className="result-body" style={{ transition: 'opacity 0.5s ease' }}>
             {resultLoading ? (
               <div className="question-loading">
                 <div className="dot" /><div className="dot" /><div className="dot" />
               </div>
+            ) : chatMode ? (
+              <span style={{
+                display: 'block', opacity: 0.28, fontSize: '15px',
+                fontStyle: 'italic', letterSpacing: '0.04em',
+                transition: 'opacity 0.5s ease',
+              }}>
+                {resultLines[0]}
+              </span>
             ) : (
               resultLines.map((line, i) => (
                 <span
@@ -394,48 +439,17 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             )}
           </div>
 
-          {!resultLoading && showJournal && journalData.journal && (
-            <div className="journal-block" style={{
-              marginTop: '32px',
-              paddingTop: '24px',
-              borderTop: '1px solid rgba(255,255,255,0.05)',
-              maxWidth: 'min(460px, 88vw)',
-              width: '100%',
-            }}>
-              <p style={{
-                fontSize: '13px', letterSpacing: '0.2em',
-                color: 'rgba(180,150,120,0.5)', marginBottom: '12px',
-                textTransform: 'uppercase',
-              }}>
-                {s.thisWeek}
-              </p>
-              {journalData.journal.content.split('\n').map((line, i) => (
-                <span key={i} style={{
-                  display: 'block', fontSize: '15px',
-                  color: 'rgba(210,190,168,0.7)', fontStyle: 'italic',
-                  lineHeight: 1.9, opacity: 0,
-                  animation: `fadeIn 0.7s ${0.3 + i * 0.3}s ease both`,
-                }}>
-                  {line}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* curhat / chat mode */}
+          {/* chat prompt */}
           {!resultLoading && showChatPrompt && !chatMode && (
-            <div style={{
-              marginTop: '28px', opacity: 0,
-              animation: 'fadeIn 0.8s 0.2s ease both',
-            }}>
+            <div style={{ marginTop: '28px', opacity: 0, animation: 'fadeIn 0.8s 0.2s ease both' }}>
               <button
                 onClick={() => setChatMode(true)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(200,170,140,0.6)', fontSize: '15px',
+                  color: 'rgba(200,170,140,0.5)', fontSize: '14px',
                   fontStyle: 'italic', letterSpacing: '0.08em',
-                  cursor: 'pointer', padding: '4px 0',
-                  borderBottom: '1px solid rgba(200,170,140,0.2)',
+                  cursor: 'pointer', padding: '0',
+                  borderBottom: '1px solid rgba(200,170,140,0.18)',
                   transition: 'color 0.3s, border-color 0.3s',
                 }}
                 onMouseEnter={e => {
@@ -443,8 +457,8 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   ;(e.target as HTMLButtonElement).style.borderColor = 'rgba(220,190,160,0.3)'
                 }}
                 onMouseLeave={e => {
-                  (e.target as HTMLButtonElement).style.color = 'rgba(200,170,140,0.4)'
-                  ;(e.target as HTMLButtonElement).style.borderColor = 'rgba(200,170,140,0.15)'
+                  (e.target as HTMLButtonElement).style.color = 'rgba(200,170,140,0.5)'
+                  ;(e.target as HTMLButtonElement).style.borderColor = 'rgba(200,170,140,0.18)'
                 }}
               >
                 {s.chatPrompt}
@@ -452,41 +466,32 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             </div>
           )}
 
+          {/* chat mode */}
           {!resultLoading && chatMode && (
             <div style={{
-              marginTop: '28px', width: '100%',
+              marginTop: '20px', width: '100%',
               maxWidth: 'min(460px, 88vw)',
               opacity: 0, animation: 'fadeIn 0.6s ease both',
             }}>
-              {/* divider */}
-              <div style={{
-                borderTop: '1px solid rgba(255,255,255,0.05)',
-                marginBottom: '20px',
-              }} />
+              <div style={{ borderTop: '1px solid rgba(255,255,255,0.04)', marginBottom: '24px' }} />
 
-              {/* message thread */}
               <div style={{
-                maxHeight: '260px', overflowY: 'auto',
-                display: 'flex', flexDirection: 'column', gap: '14px',
-                paddingRight: '4px', marginBottom: '16px',
+                maxHeight: '300px', overflowY: 'auto',
+                display: 'flex', flexDirection: 'column', gap: '20px',
+                paddingRight: '4px', marginBottom: '20px',
                 scrollbarWidth: 'none',
               }}>
                 {chatMessages.map((msg, i) => (
                   <div key={i} style={{
-                    display: 'flex',
-                    justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    opacity: 0,
-                    animation: `fadeIn 0.5s ${i * 0.1}s ease both`,
+                    display: 'flex', flexDirection: 'column',
+                    alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    opacity: 0, animation: `fadeIn 0.5s ${i * 0.08}s ease both`,
                   }}>
                     <span style={{
-                      fontSize: '15px',
-                      lineHeight: 1.85,
-                      maxWidth: '85%',
-                      color: msg.role === 'aya'
-                        ? 'rgba(215,195,170,0.85)'
-                        : 'rgba(180,165,148,0.65)',
+                      fontSize: '14px', lineHeight: 1.9, maxWidth: '88%',
+                      color: msg.role === 'aya' ? 'rgba(210,188,165,0.82)' : 'rgba(195,178,160,0.6)',
                       fontStyle: msg.role === 'aya' ? 'italic' : 'normal',
-                      letterSpacing: '0.02em',
+                      letterSpacing: msg.role === 'aya' ? '0.03em' : '0.01em',
                       textAlign: msg.role === 'user' ? 'right' : 'left',
                     }}>
                       {msg.text}
@@ -494,7 +499,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   </div>
                 ))}
                 {chatLoading && (
-                  <div style={{ display: 'flex', gap: '5px', paddingLeft: '2px' }}>
+                  <div style={{ display: 'flex', gap: '6px', paddingLeft: '2px' }}>
                     {[0,1,2].map(i => (
                       <div key={i} className="dot" style={{ animationDelay: `${i * 0.2}s` }} />
                     ))}
@@ -503,11 +508,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                 <div ref={chatEndRef} />
               </div>
 
-              {/* input */}
               <div style={{
-                display: 'flex', alignItems: 'center', gap: '10px',
-                borderBottom: '1px solid rgba(200,170,140,0.15)',
-                paddingBottom: '8px',
+                display: 'flex', alignItems: 'center', gap: '12px',
+                borderBottom: '1px solid rgba(200,170,140,0.12)',
+                paddingBottom: '10px',
               }}>
                 <input
                   type="text"
@@ -518,7 +522,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   autoFocus
                   style={{
                     flex: 1, background: 'none', border: 'none', outline: 'none',
-                    color: 'rgba(220,200,178,0.85)', fontSize: '15px',
+                    color: 'rgba(220,200,178,0.85)', fontSize: '14px',
                     fontStyle: 'italic', letterSpacing: '0.03em',
                     caretColor: 'rgba(220,190,150,0.5)',
                   }}
@@ -528,23 +532,22 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
                   disabled={chatLoading || !chatInput.trim()}
                   style={{
                     background: 'none', border: 'none',
-                    color: chatInput.trim() ? 'rgba(220,180,130,0.6)' : 'rgba(255,255,255,0.1)',
-                    fontSize: '16px', cursor: chatInput.trim() ? 'pointer' : 'default',
-                    padding: '0 2px', transition: 'color 0.2s',
+                    cursor: chatInput.trim() ? 'pointer' : 'default',
+                    padding: '0', transition: 'opacity 0.2s',
+                    display: 'flex', alignItems: 'center',
                   }}
                 >
-                  {s.chatSend}
+                  <IconSend active={!!chatInput.trim()} />
                 </button>
               </div>
 
-              {/* close chat */}
               <button
                 onClick={() => setChatMode(false)}
                 style={{
                   background: 'none', border: 'none',
-                  color: 'rgba(160,140,120,0.5)', fontSize: '12px',
+                  color: 'rgba(150,133,115,0.4)', fontSize: '12px',
                   letterSpacing: '0.1em', cursor: 'pointer',
-                  marginTop: '14px', fontStyle: 'italic',
+                  marginTop: '16px', fontStyle: 'italic', padding: '0',
                 }}
               >
                 {s.chatClose}
@@ -552,20 +555,80 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             </div>
           )}
 
-          <button className="back-btn" onClick={goBack}>{s.back}</button>
+          <button className="back-btn" onClick={goBack} style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <IconBack />
+            <span>{s.back}</span>
+          </button>
+
+          {/* journal corner trigger — only when journal exists */}
+          {!resultLoading && journalData.journal && showJournal && (
+            <button
+              onClick={() => setShowJournalPanel(true)}
+              style={{
+                position: 'fixed', bottom: '22px', right: '24px',
+                background: 'none', border: 'none',
+                color: 'rgba(170,148,120,0.35)', fontSize: '11px',
+                letterSpacing: '0.2em', textTransform: 'uppercase',
+                fontStyle: 'italic', cursor: 'pointer',
+                opacity: 0, animation: 'fadeIn 0.8s 1s ease both',
+                transition: 'color 0.3s',
+                padding: '0',
+              }}
+              onMouseEnter={e => (e.currentTarget.style.color = 'rgba(200,175,145,0.6)')}
+              onMouseLeave={e => (e.currentTarget.style.color = 'rgba(170,148,120,0.35)')}
+            >
+              {s.thisWeek}
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* journal panel overlay — slides up from bottom */}
+      {showJournalPanel && journalData.journal && (
+        <div
+          className="journal-panel"
+          onClick={() => setShowJournalPanel(false)}
+        >
+          <div
+            className="journal-panel-inner"
+            onClick={e => e.stopPropagation()}
+          >
+            <p className="journal-panel-label">{s.thisWeek}</p>
+            {journalData.journal.content.split('\n').map((line, i) => (
+              <span key={i} style={{
+                display: 'block', fontSize: '16px',
+                color: 'rgba(215,195,170,0.78)', fontStyle: 'italic',
+                lineHeight: 2, opacity: 0,
+                animation: `fadeIn 0.7s ${0.1 + i * 0.25}s ease both`,
+              }}>
+                {line}
+              </span>
+            ))}
+            <button
+              onClick={() => setShowJournalPanel(false)}
+              style={{
+                marginTop: '28px', background: 'none', border: 'none',
+                color: 'rgba(150,133,115,0.4)', fontSize: '11px',
+                letterSpacing: '0.15em', fontStyle: 'italic',
+                cursor: 'pointer', padding: '0',
+              }}
+            >
+              {s.chatClose}
+            </button>
+          </div>
         </div>
       )}
 
       {/* status dot */}
       <div className={`status-dot${agentStatus !== 'idle' ? ` ${agentStatus}` : ''}`}>
         <div className="dot-live" />
-        <span>aya here · </span>
+        <span>aya here</span>
       </div>
 
       {/* user info — top left */}
       <div className="user-info">
         <span className="user-name">{session.user?.name?.split(' ')[0]}</span>
-        <span className="info-sep">·</span>
+        <span className="info-sep"> </span>
         <button className="ghost-btn" onClick={() => signOut({ callbackUrl: '/' })}>sign out</button>
       </div>
 
