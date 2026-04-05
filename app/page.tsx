@@ -26,6 +26,9 @@ export default function Landing() {
           background: #0c0a09;
           min-height: 100vh;
           overflow-x: hidden;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-rendering: optimizeLegibility;
         }
 
         .landing {
@@ -56,7 +59,7 @@ export default function Landing() {
           inset: 0;
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
           pointer-events: none;
-          opacity: 0.4;
+          opacity: 0.2; /* reduced — was making text look grainy */
         }
 
         .content {
@@ -107,6 +110,11 @@ export default function Landing() {
 
         .subtitle.visible { opacity: 1; }
 
+        @keyframes borderPulse {
+          0%, 100% { border-color: rgba(200, 170, 120, 0.18); }
+          50%       { border-color: rgba(200, 170, 120, 0.38); }
+        }
+
         .signin-btn {
           display: inline-flex;
           align-items: center;
@@ -120,17 +128,22 @@ export default function Landing() {
           font-size: 14px;
           letter-spacing: 0.08em;
           cursor: pointer;
-          transition: background 0.3s, border-color 0.3s, color 0.3s;
+          /* single transition declaration — no duplicate */
           opacity: 0;
           transition: opacity 1.2s ease 0.8s, background 0.3s, border-color 0.3s, color 0.3s;
         }
 
-        .signin-btn.visible { opacity: 1; }
+        .signin-btn.visible {
+          opacity: 1;
+          /* border breathes gently once revealed */
+          animation: borderPulse 4s 2.2s ease-in-out infinite;
+        }
 
         .signin-btn:hover:not(:disabled) {
           background: rgba(255, 255, 255, 0.07);
-          border-color: rgba(200, 170, 120, 0.35);
+          border-color: rgba(200, 170, 120, 0.5) !important;
           color: rgba(230, 210, 180, 0.95);
+          animation-play-state: paused;
         }
 
         .signin-btn:disabled {

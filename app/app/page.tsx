@@ -8,24 +8,22 @@ type Answer = 'yes' | 'no'
 
 const STATIC = {
   id: {
-    yes: 'Ya', no: 'Tidak',
+    yes: 'ya', no: 'tidak',
     sub: 'jawab dengan jujur',
-    labelYes: 'kamu bilang', labelNo: 'kamu bilang',
-    titleYes: 'ya.', titleNo: 'tidak.',
     back: '← kembali',
     retry: '↺ pertanyaan lain',
-    streak: 'hari berturut-turut',
+    streak: 'hari',
     thisWeek: 'minggu ini',
+    switchTo: 'en',
   },
   en: {
-    yes: 'Yes', no: 'No',
+    yes: 'yes', no: 'no',
     sub: 'answer honestly',
-    labelYes: 'you said', labelNo: 'you said',
-    titleYes: 'yes.', titleNo: 'no.',
     back: '← go back',
     retry: '↺ new question',
-    streak: 'days in a row',
+    streak: 'days',
     thisWeek: 'this week',
+    switchTo: 'id',
   },
 }
 
@@ -41,7 +39,7 @@ const FALLBACK_RESPONSES = {
   },
   no: {
     id: ['tidak apa-apa.', 'cukup ada di sini.', 'itu sudah berani.'],
-    en: ["that's okay.", 'just being here', 'is already brave.'],
+    en: ["that's okay.", 'just being here is already brave.'],
   },
 }
 
@@ -50,20 +48,35 @@ type JournalData = {
   journal: { week: string; content: string; sessionCount: number } | null
 }
 
+function detectLang(): Lang {
+  if (typeof navigator === 'undefined') return 'id'
+  const l = navigator.language || ''
+  return l.startsWith('id') ? 'id' : 'en'
+}
+
+function getTimeContext(): string {
+  const h = new Date().getHours()
+  if (h >= 5 && h < 9)   return 'early morning'
+  if (h >= 9 && h < 12)  return 'morning'
+  if (h >= 12 && h < 15) return 'afternoon'
+  if (h >= 15 && h < 18) return 'late afternoon'
+  if (h >= 18 && h < 21) return 'evening'
+  return 'night'
+}
+
 export default function Home() {
   const { data: session, status } = useSession()
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      window.location.href = '/'
-    }
+    if (status === 'unauthenticated') window.location.href = '/'
   }, [status])
 
   if (status === 'loading' || !session) {
     return (
       <div style={{
         minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        background: '#0d0b0a', color: 'rgba(200,180,160,0.4)', fontStyle: 'italic', fontSize: '14px'
+        background: '#0d0b0a', color: 'rgba(200,180,160,0.35)', fontStyle: 'italic', fontSize: '13px',
+        letterSpacing: '0.1em',
       }}>
         ...
       </div>
@@ -78,14 +91,13 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
   const [question, setQuestion] = useState('')
   const [questionLoading, setQuestionLoading] = useState(true)
   const [buttonsDisabled, setButtonsDisabled] = useState(true)
-  const [mainHover, setMainHover] = useState<'warm' | 'cold' | null>(null)
+  const [hoverSide, setHoverSide] = useState<'yes' | 'no' | null>(null)
   const [showResult, setShowResult] = useState(false)
   const [resultActive, setResultActive] = useState(false)
   const [answerType, setAnswerType] = useState<Answer>('yes')
   const [resultLines, setResultLines] = useState<string[]>([])
   const [resultLoading, setResultLoading] = useState(false)
   const [agentStatus, setAgentStatus] = useState<'idle' | 'connected' | 'error'>('idle')
-
   const [journalData, setJournalData] = useState<JournalData>({ streak: 0, journal: null })
   const [showJournal, setShowJournal] = useState(false)
 
@@ -96,15 +108,14 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
   const langRef = useRef(lang)
   langRef.current = lang
 
-  // ── Load journal data on mount ──
   useEffect(() => {
-    fetch('/api/journal')
-      .then(r => r.json())
-      .then(setJournalData)
-      .catch(() => {})
+    setLang(detectLang())
   }, [])
 
-  // ── Save session after each completed interaction ──
+  useEffect(() => {
+    fetch('/api/journal').then(r => r.json()).then(setJournalData).catch(() => {})
+  }, [])
+
   const saveSession = useCallback(async (question: string, answer: Answer, response: string, lang: Lang) => {
     try {
       await fetch('/api/session', {
@@ -112,16 +123,11 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ question, answer, response, lang }),
       })
-      // Refresh journal data after save
       const res = await fetch('/api/journal')
-      const data = await res.json()
-      setJournalData(data)
-    } catch {
-      // silently fail — session saving is non-critical
-    }
+      setJournalData(await res.json())
+    } catch {}
   }, [])
 
-  // ── API ──
   const callAgent = useCallback(async (text: string): Promise<string> => {
     const res = await fetch('/api/chat', {
       method: 'POST',
@@ -134,7 +140,6 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     return ((data as { text?: string }).text || '').trim()
   }, [])
 
-  // ── GENERATE QUESTION ──
   const generateQuestion = useCallback(async (l?: Lang) => {
     const activeLang = l ?? langRef.current
     setQuestion('')
@@ -143,9 +148,10 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     setShowJournal(false)
     currentQuestion.current = ''
 
+    const time = getTimeContext()
     const prompt = activeLang === 'id'
-      ? '[MODE:PERTANYAAN] Hasilkan SATU pertanyaan introspektif singkat (maks 8 kata) dalam bahasa Indonesia. Tema: kebahagiaan, kehadiran, kesendirian, kedamaian batin. Hanya pertanyaan saja, tanpa tanda kutip.'
-      : '[MODE:QUESTION] Generate ONE short introspective question (max 8 words). Themes: happiness, presence, loneliness, inner peace. Just the question, no quotes.'
+      ? `[MODE:PERTANYAAN] Waktu: ${time}. Hasilkan SATU pertanyaan introspektif singkat (maks 8 kata) dalam bahasa Indonesia. Tema: kebahagiaan, kehadiran, kesendirian, kedamaian batin. Sesuaikan tone dengan waktu. Hanya pertanyaan saja, tanpa tanda kutip.`
+      : `[MODE:QUESTION] Time of day: ${time}. Generate ONE short introspective question (max 8 words). Themes: happiness, presence, loneliness, inner peace. Adjust tone to time. Just the question, no quotes.`
 
     try {
       let q = await callAgent(prompt)
@@ -166,20 +172,20 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     }
   }, [callAgent])
 
-  // ── GENERATE RESPONSE ──
   const generateResponse = useCallback(async (type: Answer) => {
     const activeLang = langRef.current
+    const time = getTimeContext()
     setResultLoading(true)
     setResultLines([])
     currentResponse.current = ''
 
     const prompt = activeLang === 'id'
-      ? `[MODE:RESPONS] Pertanyaan: "${currentQuestion.current}" | Jawaban user: ${type === 'yes' ? 'YA' : 'TIDAK'}. Tulis respons empatik singkat (3-5 baris). Gaya: puitis, hangat, lembut. Setiap baris dipisah newline.`
-      : `[MODE:RESPONSE] Question: "${currentQuestion.current}" | User answered: ${type === 'yes' ? 'YES' : 'NO'}. Write a short empathetic response (3-5 lines). Style: poetic, warm, gentle. Each line separated by newline.`
+      ? `[MODE:RESPONS] Waktu: ${time}. Pertanyaan: "${currentQuestion.current}" | Jawaban: ${type === 'yes' ? 'YA' : 'TIDAK'}. Tulis respons empatik singkat (2-4 baris). Gaya: puitis, hangat, sesuai waktu ${time}. Tiap baris dipisah newline.`
+      : `[MODE:RESPONSE] Time: ${time}. Question: "${currentQuestion.current}" | Answer: ${type === 'yes' ? 'YES' : 'NO'}. Write a short empathetic response (2-4 lines). Style: poetic, warm, fitting for ${time}. Each line separated by newline.`
 
     try {
       const text = await callAgent(prompt)
-      const lines = text.split('\n').filter((l) => l.trim())
+      const lines = text.split('\n').filter(l => l.trim())
       const finalLines = lines.length ? lines : FALLBACK_RESPONSES[type][activeLang]
       currentResponse.current = finalLines.join('\n')
       setResultLines(finalLines)
@@ -188,17 +194,16 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
       currentResponse.current = fallback.join('\n')
       setResultLines(fallback)
     } finally {
-      // Always save session — even if agent was unreachable and used fallback
       saveSession(currentQuestion.current, type, currentResponse.current, activeLang)
       setResultLoading(false)
       setTimeout(() => setShowJournal(true), 2000)
     }
   }, [callAgent, saveSession])
 
-  // ── ANSWER ──
   const handleAnswer = useCallback(async (type: Answer) => {
+    if (buttonsDisabled) return
     stopParticles()
-    setMainHover(null)
+    setHoverSide(null)
     setAnswerType(type)
     setShowResult(true)
     setResultActive(false)
@@ -206,9 +211,8 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     if (type === 'yes') startParticles('yes', 3)
     else startParticles('no', 1)
     await generateResponse(type)
-  }, [generateResponse])
+  }, [generateResponse, buttonsDisabled])
 
-  // ── GO BACK ──
   const goBack = useCallback(() => {
     setResultActive(false)
     setShowJournal(false)
@@ -219,13 +223,12 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     }, 800)
   }, [generateQuestion])
 
-  // ── LANG SWITCH ──
-  const switchLang = useCallback((l: Lang) => {
-    setLang(l)
-    generateQuestion(l)
+  const switchLang = useCallback(() => {
+    const next: Lang = langRef.current === 'id' ? 'en' : 'id'
+    setLang(next)
+    generateQuestion(next)
   }, [generateQuestion])
 
-  // ── PARTICLES ──
   function stopParticles() {
     if (pInterval.current) { clearInterval(pInterval.current); pInterval.current = null }
   }
@@ -253,56 +256,46 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
     pInterval.current = setInterval(() => { for (let i = 0; i < n; i++) spawnParticle(type) }, 150)
   }
 
-  // init
   useEffect(() => { generateQuestion(); return () => stopParticles() }, [])  // eslint-disable-line
 
   const s = STATIC[lang]
 
   return (
     <>
-      <style>{`
-        @keyframes journalFadeIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        .journal-block {
-          animation: journalFadeIn 0.8s ease both;
-        }
-        .streak-pill {
-          animation: journalFadeIn 0.5s ease both;
-        }
-      `}</style>
-
-      {/* particles */}
       <div ref={particlesEl} className="particles" />
 
-      {/* header */}
-      <div className="header">
-        {/* Streak badge */}
-        {journalData.streak >= 2 && (
-          <div className="streak-pill" style={{
-            fontSize: '11px',
-            color: 'rgba(180,150,120,0.6)',
-            letterSpacing: '0.06em',
-            fontStyle: 'italic',
-          }}>
-            {journalData.streak} {s.streak}
-          </div>
-        )}
-        <div className="lang-toggle">
-          <button className={`lang-btn${lang === 'id' ? ' active' : ''}`} onClick={() => switchLang('id')}>ID</button>
-          <div className="lang-sep" />
-          <button className={`lang-btn${lang === 'en' ? ' active' : ''}`} onClick={() => switchLang('en')}>EN</button>
+      {/* split-screen interaction zones — entire screen is clickable */}
+      <div
+        className="split-screen"
+        style={{ opacity: showResult ? 0 : 1, pointerEvents: showResult ? 'none' : 'all' }}
+      >
+        <div
+          className={`split-half yes-half${hoverSide === 'yes' ? ' active' : ''}`}
+          onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('yes'); startParticles('yes', 2) } }}
+          onMouseLeave={() => { setHoverSide(null); stopParticles() }}
+          onClick={() => handleAnswer('yes')}
+        >
+          <span className="split-label">{s.yes}</span>
+        </div>
+
+        <div className="split-divider" />
+
+        <div
+          className={`split-half no-half${hoverSide === 'no' ? ' active' : ''}`}
+          onMouseEnter={() => { if (!buttonsDisabled) { setHoverSide('no'); startParticles('no', 1) } }}
+          onMouseLeave={() => { setHoverSide(null); stopParticles() }}
+          onClick={() => handleAnswer('no')}
+        >
+          <span className="split-label">{s.no}</span>
         </div>
       </div>
 
-      {/* main */}
+      {/* question floats centered above the zones */}
       <div
-        className={`main${mainHover === 'warm' ? ' warm-hover' : ''}${mainHover === 'cold' ? ' cold-hover' : ''}`}
-        style={{ opacity: showResult ? 0 : 1, pointerEvents: showResult ? 'none' : 'all' }}
+        className="question-float"
+        style={{ opacity: showResult ? 0 : 1, pointerEvents: 'none' }}
       >
         <div className="breathe-line" />
-
         <div className="question-wrap">
           {questionLoading ? (
             <div className="question-loading">
@@ -310,45 +303,33 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             </div>
           ) : (
             <>
-              <h1 className="question">{question}</h1>
-              <div className="retry-hint" onClick={() => generateQuestion()}>{s.retry}</div>
+              <h1 className={`question${hoverSide === 'yes' ? ' warm' : hoverSide === 'no' ? ' cool' : ''}`}>
+                {question}
+              </h1>
+              <div
+                className="retry-hint"
+                style={{ pointerEvents: 'all' }}
+                onClick={() => generateQuestion()}
+              >
+                {s.retry}
+              </div>
             </>
           )}
         </div>
-
         <p className="sub-question">{s.sub}</p>
-
-        <div className="choices">
-          <button
-            className="choice yes"
-            disabled={buttonsDisabled}
-            onMouseEnter={() => { setMainHover('warm'); startParticles('yes', 2) }}
-            onMouseLeave={() => { setMainHover(null); stopParticles() }}
-            onClick={() => handleAnswer('yes')}
-          >{s.yes}</button>
-          <button
-            className="choice no"
-            disabled={buttonsDisabled}
-            onMouseEnter={() => { setMainHover('cold'); startParticles('no', 1) }}
-            onMouseLeave={() => { setMainHover(null); stopParticles() }}
-            onClick={() => handleAnswer('no')}
-          >{s.no}</button>
-        </div>
       </div>
 
-      {/* result overlay */}
+      {/* result overlay — stripped down */}
       {showResult && (
-        <div className={`result${resultActive ? ' active' : ''} ${answerType === 'yes' ? 'yes-result' : 'no-result'}`}>
-          {/* visual effects */}
+        <div className={`result${resultActive ? ' active' : ''} ${answerType}-result`}>
+          {/* only indicator of which answer: a thin accent bar */}
+          <div className="result-accent-bar" />
+
           {answerType === 'yes' ? (
             <><div className="glow-ring r1" /><div className="glow-ring r2" /><div className="glow-ring r3" /></>
           ) : (
             <div className="static-line" />
           )}
-
-          <div className="result-label">{answerType === 'yes' ? s.labelYes : s.labelNo}</div>
-          <div className="result-title">{answerType === 'yes' ? s.titleYes : s.titleNo}</div>
-          <div className="result-divider" />
 
           <div className="result-body">
             {resultLoading ? (
@@ -359,7 +340,7 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
               resultLines.map((line, i) => (
                 <span
                   key={`${line}-${i}`}
-                  style={{ display: 'block', opacity: 0, animation: `fadeIn 0.6s ${i * 0.35}s ease both` }}
+                  style={{ display: 'block', opacity: 0, animation: `fadeIn 0.8s ${i * 0.45}s ease both` }}
                 >
                   {line}
                 </span>
@@ -367,30 +348,26 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
             )}
           </div>
 
-          {/* Weekly journal reflection — appears autonomously after response */}
           {!resultLoading && showJournal && journalData.journal && (
             <div className="journal-block" style={{
-              marginTop: '28px',
-              paddingTop: '20px',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              marginTop: '32px',
+              paddingTop: '24px',
+              borderTop: '1px solid rgba(255,255,255,0.05)',
+              maxWidth: 'min(460px, 88vw)',
+              width: '100%',
             }}>
               <p style={{
-                fontSize: '9px',
-                letterSpacing: '0.18em',
-                color: 'rgba(180,150,120,0.4)',
-                marginBottom: '10px',
+                fontSize: '9px', letterSpacing: '0.2em',
+                color: 'rgba(180,150,120,0.35)', marginBottom: '12px',
                 textTransform: 'uppercase',
               }}>
                 {s.thisWeek}
               </p>
               {journalData.journal.content.split('\n').map((line, i) => (
                 <span key={i} style={{
-                  display: 'block',
-                  fontSize: '13px',
-                  color: 'rgba(200,180,160,0.55)',
-                  fontStyle: 'italic',
-                  lineHeight: 1.8,
-                  opacity: 0,
+                  display: 'block', fontSize: '13px',
+                  color: 'rgba(210,190,168,0.55)', fontStyle: 'italic',
+                  lineHeight: 1.9, opacity: 0,
                   animation: `fadeIn 0.7s ${0.3 + i * 0.3}s ease both`,
                 }}>
                   {line}
@@ -403,42 +380,38 @@ function AppContent({ session }: { session: NonNullable<ReturnType<typeof useSes
         </div>
       )}
 
-      {/* status indicator */}
+      {/* status dot */}
       <div className={`status-dot${agentStatus !== 'idle' ? ` ${agentStatus}` : ''}`}>
         <div className="dot-live" />
         <span>aya · nosana</span>
       </div>
 
-      {/* user + signout */}
-      <div style={{
-        position: 'fixed', top: '16px', left: '16px',
-        display: 'flex', alignItems: 'center', gap: '8px',
-        fontSize: '11px', color: 'rgba(180,150,120,0.45)',
-        letterSpacing: '0.05em',
-      }}>
-        <span style={{ fontStyle: 'italic' }}>{session.user?.name?.split(' ')[0]}</span>
-        <button
-          onClick={() => signOut({ callbackUrl: '/' })}
-          style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            color: 'rgba(180,150,120,0.3)', fontSize: '10px',
-            letterSpacing: '0.08em', padding: '2px 6px',
-            borderRadius: '4px', transition: 'color 0.2s',
-          }}
-          onMouseEnter={e => (e.currentTarget.style.color = 'rgba(180,150,120,0.7)')}
-          onMouseLeave={e => (e.currentTarget.style.color = 'rgba(180,150,120,0.3)')}
-        >
-          sign out
-        </button>
+      {/* user info — top left */}
+      <div className="user-info">
+        <span className="user-name">{session.user?.name?.split(' ')[0]}</span>
+        <span className="info-sep">·</span>
+        <button className="ghost-btn" onClick={() => signOut({ callbackUrl: '/' })}>sign out</button>
       </div>
 
-      {/* attribution */}
+      {/* streak — only after 7 days */}
+      {journalData.streak >= 7 && (
+        <div className="streak-display">
+          {journalData.streak} {s.streak}
+        </div>
+      )}
+
+      {/* lang switcher — whisper text, bottom left */}
+      <button className="lang-switch" onClick={switchLang}>
+        {s.switchTo}
+      </button>
+
+      {/* nosana badge */}
       <a className="nosana-badge" href="https://nosana.com" target="_blank" rel="noopener noreferrer">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
           <circle cx="12" cy="12" r="9" strokeWidth="1" />
           <path d="M12 3v18M3 12h18" strokeWidth="1" />
         </svg>
-        <span>powered by nosana</span>
+        <span>nosana</span>
       </a>
     </>
   )
