@@ -4,8 +4,8 @@ import { sendMessageFireAndForget } from "@/lib/eliza";
 import {
   addSession,
   getSessions,
-  getCurrentWeek,
   type Session,
+  // FIX: hapus getCurrentWeek — diimport tapi tidak pernah dipakai
 } from "../../../lib/storage";
 
 async function triggerJournalViaEliza(userId: string): Promise<void> {

@@ -8,6 +8,10 @@ import {
   AGENT_ID,
 } from '@/lib/eliza'
 
+// FIX: tambah maxDuration agar Next.js tidak memotong request sebelum selesai
+// (penting untuk deployment di Vercel/platform yang enforce function timeout)
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   const userId = await resolveUserId(req)
   if (!userId) {
@@ -29,11 +33,12 @@ export async function POST(req: NextRequest) {
     const sessionId = await getOrCreateElizaSession(userId)
     const sentAt = Date.now()
 
+    // FIX: turunkan timeout POST message dari 10000 → 8000
     const msgRes = await fetch(`${AGENT_URL}/api/messaging/sessions/${sessionId}/messages`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ content: body.text }),
-      signal: AbortSignal.timeout(10000),
+      signal: AbortSignal.timeout(8000),
     })
 
     if (!msgRes.ok) {

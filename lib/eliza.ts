@@ -1,8 +1,6 @@
 const AGENT_URL = process.env.ELIZA_API_URL || 'http://localhost:3001'
 const AGENT_ID  = process.env.ELIZA_AGENT_ID  || '30c8adf3-1590-0456-aed5-9c78c439c205'
 
-// Shared session cache — imported by both chat and session routes
-// so the same user always uses the same Eliza session context
 const sessionCache = new Map<string, { sessionId: string; expiresAt: number }>()
 
 export async function getOrCreateElizaSession(userId: string): Promise<string> {
@@ -15,11 +13,14 @@ export async function getOrCreateElizaSession(userId: string): Promise<string> {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ agentId: AGENT_ID, userId }),
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(8000),
   })
 
   if (!res.ok) throw new Error(`Eliza session create failed: ${res.status}`)
   const data = await res.json()
+
+  // DEBUG: lihat struktur response session
+  console.log('[eliza] session create response:', JSON.stringify(data))
 
   sessionCache.set(userId, {
     sessionId: data.sessionId,
@@ -38,37 +39,47 @@ export function invalidateElizaSession(userId: string) {
 export async function pollForReply(
   sessionId: string,
   sentAt: number,
-  maxWait = 15000
+  maxWait = 25000
 ): Promise<string | null> {
   const deadline = Date.now() + maxWait
 
   while (Date.now() < deadline) {
-    await new Promise(r => setTimeout(r, 1200))
+    try {
+      const res = await fetch(
+        `${AGENT_URL}/api/messaging/sessions/${sessionId}/messages`,
+        { signal: AbortSignal.timeout(5000) }
+      )
 
-    const res = await fetch(`${AGENT_URL}/api/messaging/sessions/${sessionId}/messages`)
-    if (!res.ok) continue
+      if (res.ok) {
+        const data = await res.json()
+        // DEBUG: lihat struktur response messages
+        console.log('[eliza] poll response:', JSON.stringify(data))
 
-    const data = await res.json()
-    const agentMsgs = (data.messages || []).filter(
-      (m: { isAgent: boolean; createdAt: string; content: string | { text?: string } }) =>
-        m.isAgent && new Date(m.createdAt).getTime() > sentAt
-    )
+        const agentMsgs = (data.messages || []).filter(
+          (m: { isAgent: boolean; createdAt: string; content: string | { text?: string } }) =>
+            m.isAgent && new Date(m.createdAt).getTime() > sentAt
+        )
 
-    if (agentMsgs.length > 0) {
-      const raw = agentMsgs[agentMsgs.length - 1].content
-      return typeof raw === 'string' ? raw : (raw as { text?: string })?.text ?? ''
+        if (agentMsgs.length > 0) {
+          const raw = agentMsgs[agentMsgs.length - 1].content
+          return typeof raw === 'string' ? raw : (raw as { text?: string })?.text ?? ''
+        }
+      } else {
+        // DEBUG: lihat kalau response tidak ok
+        console.log('[eliza] poll failed, status:', res.status, 'sessionId:', sessionId)
+      }
+    } catch (e) {
+      console.log('[eliza] poll error:', e)
+    }
+
+    if (Date.now() < deadline) {
+      await new Promise(r => setTimeout(r, 1200))
     }
   }
 
   return null
 }
 
-// Send a message to Eliza without waiting for a reply.
-// Used for fire-and-forget triggers like journal generation.
-//
-// sessionSuffix — appended to userId when looking up/creating the Eliza session.
-// Use a distinct suffix (e.g. '-journal') so journal triggers never share the
-// same session context as the user's active chat, which would corrupt both.
 export async function sendMessageFireAndForget(
   userId: string,
   text: string,
@@ -80,7 +91,7 @@ export async function sendMessageFireAndForget(
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: text }),
-    signal: AbortSignal.timeout(10000),
+    signal: AbortSignal.timeout(8000),
   })
 
   if (!res.ok) invalidateElizaSession(userId + sessionSuffix)
